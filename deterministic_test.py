@@ -25,9 +25,9 @@ samples = 5
 
 def is_env_deterministic(env, users=5):
     c_env = deepcopy(env)
-    a = c_env.generate_data(users)
+    a = c_env.generate_logs(users)
     c_env = deepcopy(env)
-    b = c_env.generate_data(users)
+    b = c_env.generate_logs(users)
     return np.mean(np.array(a == b)) == 1.0
 
 if __name__ == "__main__":

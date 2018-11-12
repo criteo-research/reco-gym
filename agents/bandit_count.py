@@ -1,13 +1,13 @@
 import numpy as np
 
-bandit_count_args = {}
-
-bandit_count_args['num_products'] = 10
+bandit_count_args = {
+    'num_products': 10
+}
 
 
 class BanditCount:
     def __init__(self, args):
-        # set all key word arguments as attributes
+        # Set all key word arguments as attributes.
         for key in args:
             setattr(self, key, args[key])
 
@@ -20,8 +20,12 @@ class BanditCount:
         """Make a recommendation"""
 
         self.update_lpv(observation)
+        action = self.ctr[self.last_product_viewed, :].argmax()
 
-        return self.ctr[self.last_product_viewed, :].argmax()
+        return {
+            'a': self.ctr[self.last_product_viewed, :].argmax(),
+            'ps': self.ctr[self.last_product_viewed, :][action]
+        }
 
     def train(self, observation, action, reward, done):
         """Train the model in an online fashion"""
@@ -29,13 +33,13 @@ class BanditCount:
         if action is not None and reward is not None:
 
             self.update_lpv(observation)
-            self.pulls_a[self.last_product_viewed, action] += 1
-            self.clicks_a[self.last_product_viewed, action] += reward
+            self.pulls_a[self.last_product_viewed, action['a']] += 1
+            self.clicks_a[self.last_product_viewed, action['a']] += reward
 
             self.ctr = (self.clicks_a + 1) / (self.pulls_a + 2)
 
     def update_lpv(self, observation):
-        """updates the last product viewed based on the observation"""
+        """Updates the last product viewed based on the observation"""
         if observation is not None:
             self.last_product_viewed = observation[-1][-1]
 

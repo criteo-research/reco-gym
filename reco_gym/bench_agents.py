@@ -3,6 +3,7 @@ from scipy.stats.distributions import beta
 
 class LogFile:
     """simple helper class for logging"""
+
     def __init__(self, path):
 
         if path is not None:
@@ -22,9 +23,8 @@ class LogFile:
             self.f.write(line + '\n')
 
 
-def test_agent(env, agent, num_offline_users=1000, num_online_users=100,num_organic_offline_users=100,
-               num_epochs=1, log_file=None):
-
+def test_agent(env, agent, num_offline_users = 1000, num_online_users = 100, num_organic_offline_users = 100,
+               num_epochs = 1, log_file = None):
     # open optional logging
     log = LogFile(log_file)
 
@@ -40,7 +40,6 @@ def test_agent(env, agent, num_offline_users=1000, num_online_users=100,num_orga
             observation, _, _, _ = env.step(None)
             agent.train(observation, None, None, True)
 
-
     # Offline Training -------------------------------------------------------
     for i in range(num_epochs):
         env.__init__()  # Reset the env for repeated sequences
@@ -49,11 +48,11 @@ def test_agent(env, agent, num_offline_users=1000, num_online_users=100,num_orga
             observation, _, done, _ = env.step(None)
             while not done:
                 old_observation = observation
-                action, observation, reward, done, info = env.step_offline()
+                action, observation, reward, done, info = env.step_offline(old_observation, 0, False)
                 agent.train(old_observation, action, reward, done)
-                if i == (num_epochs-1):
-                    log.write(user_id, False, observation, action, reward)
-            if i == (num_epochs-1):
+                if i == (num_epochs - 1):
+                    log.write(user_id, False, observation, action['a'], reward)
+            if i == (num_epochs - 1):
                 user_id += 1
 
     # Online Testing ---------------------------------------------------------
@@ -67,7 +66,7 @@ def test_agent(env, agent, num_offline_users=1000, num_online_users=100,num_orga
         done = None
         while not done:
             action = agent.act(observation, reward, done)
-            observation, reward, done, info = env.step(action)
+            observation, reward, done, info = env.step(action['a'])
 
             user_id += 1
             if reward:
@@ -76,7 +75,7 @@ def test_agent(env, agent, num_offline_users=1000, num_online_users=100,num_orga
                 fail = fail + 1
 
     return (
-        beta.ppf(0.5, suc+1, fail+1),
-        beta.ppf(0.025, suc+1, fail+1),
-        beta.ppf(0.975, suc+1, fail+1)
-        )
+        beta.ppf(0.5, suc + 1, fail + 1),
+        beta.ppf(0.025, suc + 1, fail + 1),
+        beta.ppf(0.975, suc + 1, fail + 1)
+    )

@@ -1,13 +1,13 @@
-# Reco-Gym
+# RecoGym
 
 Python code for the RecSys 2018 REVEAL workshop paper entitled 'RecoGym: A Reinforcement Learning Environment for the problem of Product Recommendation in Online Advertising'. A pre-print version of the paper can be found here - https://arxiv.org/abs/1808.00720
 
-RecoGym is a Open-AI gym RL environment for recommendation, which is defined by a model of user traffic patterns on e-commerce and the users response to recommendations on the publisher websites. We hope that reco-gym will be an important step forward for the field of recommendation systems research, that could open up an avenue of collaboration between the recommender systems and reinforcement learning communities and lead to better alignment between offline and online performance metrics.
+RecoGym is a Open-AI gym RL environment for recommendation, which is defined by a model of user traffic patterns on e-commerce and the users response to recommendations on the publisher websites. We hope that RecoGym will be an important step forward for the field of recommendation systems research, that could open up an avenue of collaboration between the recommender systems and reinforcement learning communities and lead to better alignment between offline and online performance metrics.
 
-For getting starting with reco-gym please view the 'Getting Started' Jupyter Notebook which will explain the functionality of the environment and detail the creation of a simple agent. The 'Compare Agent' notebook compares the recommendation performance of a selection of our included agents. The agent we include with reco-gym can be found in the agents directory of this repository. 
+For getting starting with RecoGym please view the 'Getting Started' Jupyter Notebook which will explain the functionality of the environment and detail the creation of a simple agent. The 'Compare Agent' notebook compares the recommendation performance of a selection of our included agents. The agent we include with RecoGym can be found in the agents directory of this repository. 
 
 ## Dependencies and Requirements
-The code has been designed to support python 3.6+ only. The project has the following dependences and version requirements:
+The code has been designed to support python 3.6+ only. The project has the following dependencies and version requirements:
 
 - python3 - 3.6.5+
 - numpy - 1.14.5+
