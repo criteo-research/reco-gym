@@ -48,18 +48,19 @@ class TestNotebookConsistency(unittest.TestCase):
     def test_notebooks(self):
         # A set of Jupyter Notebooks to test.
         # Note #1: it is assumed that the current directory
-        # is the same where the test file is located.
-        # Note #2: the name of the Notebook defined without the extension `*.ipynb'.
+        # is the same where a test file is located.
+        # Note #2: the name of the Notebook should be defined without the extension `*.ipynb'.
         for case in {
             'Getting Started',
             'Compare Agents',
+            'Likelihood Agents',
             'Pure Organic vs Bandit - Number of Online Users',
         }:
             with self.subTest(i = case):
                 try:
                     notebook = self._execute_notebook(case)
                 except Exception:
-                    self.fail(f"Case have not passed: {case}")
+                    self.fail(f"Case has not passed: {case}")
 
             errors, warnings = self._analise_notebook(notebook)
             self.assertEqual(errors, [], f"Case '{case}': NOK -- Errors: {errors}")

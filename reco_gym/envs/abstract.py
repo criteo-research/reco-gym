@@ -36,19 +36,20 @@ stop = 2
 
 # Define agent class.
 class RandomAgent:
-    def __init__(self, env):
+    def __init__(self, env, rng = None):
         # Set Environment as an attribute of the Agent.
         self.env = env
+        self.rng = RandomState(env['random_seed']) if rng is not None else rng
 
     def act(self, observation, reward, done):
         """
         Act method returns an action based on a current observation and past history
         """
         prob = 1.0 / float(self.env['num_products'])
-        action = np.random.choice(self.env['num_products'])
+        action = self.rng.choice(self.env['num_products'])
 
         return {
-            'a': action,
+            'a': int(action),
             'ps': prob
         }
 
@@ -142,13 +143,22 @@ class AbstractEnv(gym.Env):
                  this is unused, it's always an empty dict
         """
 
+        # No information to return.
+        info = {}
+
         if self.first_step:
             assert (action_id is None)
-            reward = None
-        else:
-            assert (action_id is not None)
-            # Calculate reward from action.
-            reward = self.draw_click(action_id)
+            self.first_step = False
+            observation = self.generate_organic_session()
+            return observation, None, None, info
+
+        assert (action_id is not None)
+        # Calculate reward from action.
+        reward = self.draw_click(action_id)
+
+        self.update_state()
+        if reward == 1:
+            self.state = organic  # Clicks are followed by Organic.
 
         # Markov state dependent logic.
         if self.state == organic:
@@ -156,19 +166,9 @@ class AbstractEnv(gym.Env):
         else:
             observation = None
 
-        if reward != 1:
-            # Update State.
-            self.update_state()
-        else:
-            self.state = organic  # Clicks are followed by Organic.
-
         # Update done flag.
         done = True if self.state == stop else False
 
-        # No information to return.
-        info = {}
-
-        self.first_step = False
         return observation, reward, done, info
 
     def step_offline(self, observation, reward, done):
@@ -181,7 +181,7 @@ class AbstractEnv(gym.Env):
                 action = self.agent.act(observation, reward, done)
             else:
                 action = {
-                    'a': self.rng.choice(self.num_products),
+                    'a': int(self.rng.choice(self.num_products)),
                     'ps': 1.0 / self.num_products
                 }
 
@@ -192,45 +192,48 @@ class AbstractEnv(gym.Env):
     def generate_logs(self, num_offline_users, agent = None):
         """Produce a DataFrame with the specified number of users"""
 
-        self.agent = RandomAgent(self.env) if agent is None else agent
+        self.agent = RandomAgent(self.env, self.rng) if agent is None else agent
 
-        user_id = 1
         data = {
-            'v': [],
+            't': [],
             'u': [],
-            'r': [],
+            'z': [],
+            'v': [],
+            'a': [],
             'c': [],
             'ps': [],
         }
-        for _ in range(num_offline_users):
+
+        time = 0
+
+        for user_id in range(num_offline_users):
             self.reset()
             observation, reward, done, _ = self.step(None)
 
-            for event in observation:
-                data['v'].append(event[1])
-                data['u'].append(user_id)
-                data['r'].append(-1)
-                data['c'].append(-1)
-                data['ps'].append(None)
-
             while not done:
+                if observation is not None:
+                    for event in observation:
+                        data['t'].append(time)
+                        data['u'].append(user_id)
+                        data['z'].append('organic')
+                        data['v'].append(event[1])
+                        data['a'].append(None)
+                        data['c'].append(None)
+                        data['ps'].append(None)
+                        time += 1
+
                 action, observation, reward, done, info = self.step_offline(observation, reward, done)
+
+                data['t'].append(time)
+                data['u'].append(user_id)
+                data['z'].append('bandit')
+                data['v'].append(None)
+                data['a'].append(action['a'])
+                data['c'].append(reward)
+                data['ps'].append(action['ps'])
+                time += 1
+
                 if done:
                     break
 
-                if observation is not None:
-                    for event in observation:
-                        data['v'].append(event[1])
-                        data['u'].append(user_id)
-                        data['r'].append(-1)
-                        data['c'].append(-1)
-                        data['ps'].append(None)
-
-                data['v'].append(-1)
-                data['u'].append(user_id)
-                data['r'].append(action['a'])
-                data['c'].append(reward)
-                data['ps'].append(action['ps'])
-
-            user_id += 1
         return pd.DataFrame().from_dict(data)

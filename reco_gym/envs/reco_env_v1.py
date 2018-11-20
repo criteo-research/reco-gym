@@ -95,9 +95,11 @@ class RecoEnv1(AbstractEnv):
         log_uprob = matmul(self.Gamma, self.omega)[:, 0] + self.mu_organic
         log_uprob = log_uprob - max(log_uprob)
         uprob = exp(log_uprob)
-        self.product_view = self.rng.choice(
-            self.num_products,
-            p = uprob / sum(uprob)
+        self.product_view = int(
+            self.rng.choice(
+                self.num_products,
+                p = uprob / sum(uprob)
+            )
         )
 
     def generate_beta(self, number_of_flips):
@@ -135,4 +137,3 @@ class RecoEnv1(AbstractEnv):
 
         self.beta = self.Gamma[index, :]
         self.mu_bandit = self.mu_organic[index]
-
