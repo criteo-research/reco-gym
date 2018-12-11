@@ -1,34 +1,33 @@
 from torch import nn, optim, Tensor
 
+from .abstract import Agent
+from reco_gym import Configuration
+
+
 # Default Arguments ----------------------------------------------------------
-
-organic_mf_square_args = {}
-
-organic_mf_square_args['num_products'] = 10
-organic_mf_square_args['embed_dim'] = 5
-
-organic_mf_square_args['mini_batch_size'] = 32
-
-organic_mf_square_args['loss_function'] = nn.CrossEntropyLoss()
-organic_mf_square_args['optim_function'] = optim.RMSprop
-organic_mf_square_args['learning_rate'] = 0.01
+organic_mf_square_args = {
+    'num_products': 10,
+    'embed_dim': 5,
+    'mini_batch_size': 32,
+    'loss_function': nn.CrossEntropyLoss(),
+    'optim_function': optim.RMSprop,
+    'learning_rate': 0.01
+}
 
 
 # Model ----------------------------------------------------------------------
-class OrganicMFSquare(nn.Module):
-    def __init__(self, args):
-        super().__init__()
-
-        # Set all key word arguments as attributes.
-        for key in args:
-            setattr(self, key, args[key])
+class OrganicMFSquare(nn.Module, Agent):
+    """TBD"""
+    def __init__(self, config = Configuration(organic_mf_square_args)):
+        nn.Module.__init__(self)
+        Agent.__init__(self, config)
 
         self.product_embedding = nn.Embedding(
-            self.num_products, self.embed_dim
+            self.config.num_products, self.embed_dim
         )
 
         self.output_layer = nn.Linear(
-            self.embed_dim, self.num_products
+            self.embed_dim, self.config.num_products
         )
 
         # Initializing optimizer type.
@@ -59,8 +58,11 @@ class OrganicMFSquare(nn.Module):
             self.action = logits.argmax().item()
 
         return {
-            'a': self.action,
-            'ps': logits[self.action] if logits is not None else 1.0
+            **super().act(observation, reward, done),
+            **{
+                'a': self.action,
+                'ps': logits[self.action] if logits is not None else 1.0
+            }
         }
 
     def update_weights(self):
@@ -80,7 +82,7 @@ class OrganicMFSquare(nn.Module):
                 label = Tensor([prods[i + 1][-1]]).long()
 
                 # Calculating supervised loss.
-                loss = self.loss_function(logit, label)
+                loss = self.config.loss_function(logit, label)
                 loss.backward()
 
         # Update weight parameters.
@@ -93,7 +95,7 @@ class OrganicMFSquare(nn.Module):
         self.curr_step += 1
 
         # Update weights of model once mini batch of data accumulated.
-        if self.curr_step % self.mini_batch_size == 0:
+        if self.curr_step % self.config.mini_batch_size == 0:
             self.update_weights()
             self.train_data = []
         else:

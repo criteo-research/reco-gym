@@ -45,15 +45,27 @@ class TestNotebookConsistency(unittest.TestCase):
                         warnings.append(output)
         return errors, warnings
 
-    def test_notebooks(self):
-        # A set of Jupyter Notebooks to test.
-        # Note #1: it is assumed that the current directory
-        # is the same where a test file is located.
-        # Note #2: the name of the Notebook should be defined without the extension `*.ipynb'.
+    def test_notebooks(self, with_replacement = False):
+        """
+        Launch Jupyter Notebooks Tests
+
+        This function automates the process of validating of Jupyter Notebooks
+        via launching them from scratch and checking that throughout the launching session
+        no error/warning occurs.
+
+        Note #1: it is assumed that the current directory
+            is the same where a test file is located.
+        Note #2: the name of the Notebook should be defined without the extension `*.ipynb'.
+
+            with_replacement: when the flag is set `True' and a Jupyter Notebook
+                has successfully passed tests, the Notebook will be replaced
+                with a newly generated Notebook with all rendered data, graphs, etc..
+        """
         for case in {
             'Getting Started',
             'Compare Agents',
             'Likelihood Agents',
+            'Inverse Propensity Score',
             'Pure Organic vs Bandit - Number of Online Users',
         }:
             with self.subTest(i = case):
@@ -65,6 +77,12 @@ class TestNotebookConsistency(unittest.TestCase):
             errors, warnings = self._analise_notebook(notebook)
             self.assertEqual(errors, [], f"Case '{case}': NOK -- Errors: {errors}")
             self.assertEqual(warnings, [], f"Case '{case}': NOK -- Warnings: {warnings}")
+
+            if with_replacement and len(errors) == 0 and len(warnings) == 0:
+                with open(f"{case}.new.ipynb", mode = 'w') as file:
+                    file.seek(0)
+                    file.write(f"{notebook}")
+
             print(f"Case '{case}': OK")
 
 

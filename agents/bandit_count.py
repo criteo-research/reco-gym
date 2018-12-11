@@ -1,18 +1,20 @@
 import numpy as np
 
+from reco_gym import Configuration
+
+from .abstract import Agent
+
 bandit_count_args = {
     'num_products': 10
 }
 
 
-class BanditCount:
-    def __init__(self, args):
-        # Set all key word arguments as attributes.
-        for key in args:
-            setattr(self, key, args[key])
+class BanditCount(Agent):
+    def __init__(self, config = Configuration(bandit_count_args)):
+        super(BanditCount, self).__init__(config)
 
-        self.pulls_a = np.zeros((self.num_products, self.num_products))
-        self.clicks_a = np.zeros((self.num_products, self.num_products))
+        self.pulls_a = np.zeros((self.config.num_products, self.config.num_products))
+        self.clicks_a = np.zeros((self.config.num_products, self.config.num_products))
         self.last_product_viewed = None
         self.ctr = (self.clicks_a + 1) / (self.pulls_a + 2)
 
@@ -23,8 +25,11 @@ class BanditCount:
         action = self.ctr[self.last_product_viewed, :].argmax()
 
         return {
-            'a': self.ctr[self.last_product_viewed, :].argmax(),
-            'ps': self.ctr[self.last_product_viewed, :][action]
+            **super().act(observation, reward, done),
+            **{
+                'a': self.ctr[self.last_product_viewed, :].argmax(),
+                'ps': self.ctr[self.last_product_viewed, :][action],
+            },
         }
 
     def train(self, observation, action, reward, done):
@@ -40,8 +45,8 @@ class BanditCount:
 
     def update_lpv(self, observation):
         """Updates the last product viewed based on the observation"""
-        if observation is not None:
-            self.last_product_viewed = observation[-1][-1]
+        if observation.sessions():
+            self.last_product_viewed = observation.sessions()[-1]['v']
 
     def save(self, location):
         """Save the state of the model to disk"""

@@ -1,5 +1,9 @@
 import numpy as np
 
+from agents import Agent
+from reco_gym import Configuration
+
+
 organic_count_args = {
     'num_products': 10
 }
@@ -34,13 +38,12 @@ def to_categorical(y, num_classes = None, dtype = 'float32'):
     return categorical
 
 
-class OrganicCount:
-    def __init__(self, args):
-        # Set all key word arguments as attributes.
-        for key in args:
-            setattr(self, key, args[key])
+class OrganicCount(Agent):
+    """TBD"""
+    def __init__(self, config = Configuration(organic_count_args)):
+        super(OrganicCount, self).__init__(config)
 
-        self.co_counts = np.zeros((self.num_products, self.num_products))
+        self.co_counts = np.zeros((self.config.num_products, self.config.num_products))
         self.corr = None
 
     def act(self, observation, reward, done):
@@ -49,18 +52,21 @@ class OrganicCount:
         self.update_lpv(observation)
 
         return {
-            'a': self.co_counts[self.last_product_viewed, :].argmax(),
-            'ps': 1.0,
+            **super().act(observation, reward, done),
+            **{
+                'a': self.co_counts[self.last_product_viewed, :].argmax(),
+                'ps': 1.0,
+            },
         }
 
     def train(self, observation, action, reward, done):
         """Train the model in an online fashion"""
-        if observation is not None:
-            A = to_categorical([o[1] for o in observation], self.num_products)
-            B = A.sum(0).reshape((self.num_products, 1))
+        if observation.sessions():
+            A = to_categorical([session['v'] for session in observation.sessions()], self.config.num_products)
+            B = A.sum(0).reshape((self.config.num_products, 1))
             self.co_counts = self.co_counts + np.matmul(B, B.T)
 
     def update_lpv(self, observation):
         """updates the last product viewed based on the observation"""
-        if observation is not None:
-            self.last_product_viewed = observation[-1][-1]
+        if observation.sessions():
+            self.last_product_viewed = observation.sessions()[-1]['v']

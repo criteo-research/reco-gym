@@ -10,7 +10,7 @@
 
 from numpy import array, diag, exp, matmul, mod
 from scipy.special import expit as sigmoid
-from .abstract import AbstractEnv, env_args
+from .abstract import AbstractEnv, env_args, organic
 
 # Default arguments for toy environment ------------------------------------
 
@@ -20,9 +20,10 @@ env_1_args = {
     **{
         'K': 5,
         'sigma_omega_initial': 0.01,
-        'sigma_omega': 1.,
+        'sigma_omega': 1.0,
         'number_of_flips': 0,
         'sigma_mu_organic': 30,
+        'change_omega_for_bandits': False,
     }
 }
 
@@ -36,12 +37,15 @@ def ff(xx, aa = 5, bb = 2, cc = 0.3, dd = 2, ee = 6):
 # Environment definition.
 class RecoEnv1(AbstractEnv):
 
+    def __init__(self):
+        super(RecoEnv1, self).__init__()
+
     def set_static_params(self):
         # Initialise the state transition matrix which is 3 by 3
         # high level transitions between organic, bandit and leave.
         self.state_transition = array([
-            [0, self.prob_organic_to_bandit, self.prob_leave_organic],
-            [self.prob_bandit_to_organic, 0, self.prob_leave_organic],
+            [0, self.config.prob_organic_to_bandit, self.config.prob_leave_organic],
+            [self.config.prob_bandit_to_organic, 0, self.config.prob_leave_organic],
             [0.0, 0.0, 1.]
         ])
 
@@ -50,34 +54,37 @@ class RecoEnv1(AbstractEnv):
 
         # Initialise Gamma for all products (Organic).
         self.Gamma = self.rng.normal(
-            size = (self.num_products, self.K)
+            size = (self.config.num_products, self.config.K)
         )
 
         # Initialise mu_organic.
         self.mu_organic = self.rng.normal(
-            0, self.sigma_mu_organic,
-            size = (self.num_products)
+            0, self.config.sigma_mu_organic,
+            size = (self.config.num_products)
         )
 
         # Initialise beta, mu_bandit for all products (Bandit).
-        self.generate_beta(self.number_of_flips)
+        self.generate_beta(self.config.number_of_flips)
 
     # Create a new user.
-    def reset(self):
-        super().reset()
+    def reset(self, user_id = 0):
+        super().reset(user_id)
         self.omega = self.rng.normal(
-            0, self.sigma_omega_initial, size = (self.K, 1)
+            0, self.config.sigma_omega_initial, size = (self.config.K, 1)
         )
 
     # Update user state to one of (organic, bandit, leave) and their omega (latent factor).
     def update_state(self):
         self.state = self.rng.choice(3, p = self.state_transition[self.state, :])
+        assert (hasattr(self, 'time_generator'))
+        self.current_time = self.time_generator.new_time()
 
         # And update omega.
-        self.omega = self.rng.normal(
-            self.omega,
-            self.sigma_omega, size = (self.K, 1)
-        )
+        if self.config.change_omega_for_bandits or self.state == organic:
+            self.omega = self.rng.normal(
+                self.omega,
+                self.config.sigma_omega, size = (self.config.K, 1)
+            )
 
     # Sample a click as response to recommendation when user in bandit state
     # click ~ Bernoulli().
@@ -97,7 +104,7 @@ class RecoEnv1(AbstractEnv):
         uprob = exp(log_uprob)
         self.product_view = int(
             self.rng.choice(
-                self.num_products,
+                self.config.num_products,
                 p = uprob / sum(uprob)
             )
         )

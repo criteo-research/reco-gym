@@ -1,8 +1,12 @@
 import torch
 from torch import nn, optim, Tensor
 
-# Default Arguments.
+from reco_gym import Configuration
 
+from .abstract import Agent
+
+
+# Default Arguments.
 bandit_mf_square_args = {
     'num_products': 10,
     'embed_dim': 5,
@@ -14,24 +18,21 @@ bandit_mf_square_args = {
 
 
 # Model.
-class BanditMFSquare(nn.Module):
-    def __init__(self, args):
-        super().__init__()
-
-        # Set all key word arguments as attributes.
-        for key in args:
-            setattr(self, key, args[key])
+class BanditMFSquare(nn.Module, Agent):
+    def __init__(self, config = Configuration(bandit_mf_square_args)):
+        nn.Module.__init__(self)
+        Agent.__init__(self, config)
 
         self.product_embedding = nn.Embedding(
-            self.num_products, self.embed_dim
+            self.config.num_products, self.config.embed_dim
         )
         self.user_embedding = nn.Embedding(
-            self.num_products, self.embed_dim
+            self.config.num_products, self.config.embed_dim
         )
 
         # Initializing optimizer type.
-        self.optimizer = self.optim_function(
-            self.parameters(), lr = self.learning_rate
+        self.optimizer = self.config.optim_function(
+            self.parameters(), lr = self.config.learning_rate
         )
 
         self.last_product_viewed = None
@@ -52,17 +53,19 @@ class BanditMFSquare(nn.Module):
 
     def get_logits(self):
         """Returns vector of product recommendation logits"""
-        logits = Tensor(self.num_products)
+        logits = Tensor(self.config.num_products)
 
-        for product in range(self.num_products):
+        for product in range(self.config.num_products):
             logits[product] = self.forward(product)
 
         return logits
 
     def update_lpv(self, observation):
         """Updates the last product viewed based on the observation"""
-        if observation is not None:
-            self.last_product_viewed = observation[-1][-1]
+        assert (observation is not None)
+        assert (observation.sessions() is not None)
+        if observation.sessions():
+            self.last_product_viewed = observation.sessions()[-1]['v']
 
     def act(self, observation, reward, done):
         # Update last product viewed.
@@ -75,8 +78,11 @@ class BanditMFSquare(nn.Module):
         action = logits.argmax().item()
 
         return {
-            'a': action,
-            'ps': logits[action],
+            **super().act(observation, reward, done),
+            **{
+                'a': action,
+                'ps': logits[action],
+            },
         }
 
     def update_weights(self):
@@ -92,7 +98,7 @@ class BanditMFSquare(nn.Module):
             reward = Tensor([reward]).squeeze()
 
             # Calculating supervised loss.
-            loss = self.loss_function(logit, reward)
+            loss = self.config.loss_function(logit, reward)
             loss.backward()
 
         # Update weight parameters.
@@ -106,7 +112,7 @@ class BanditMFSquare(nn.Module):
         self.curr_step += 1
 
         # Update weights of model once mini batch of data accumulated.
-        if self.curr_step % self.mini_batch_size == 0:
+        if self.curr_step % self.config.mini_batch_size == 0:
             self.update_weights()
             self.train_data = []
         else:
