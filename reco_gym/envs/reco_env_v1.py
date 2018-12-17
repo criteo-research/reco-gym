@@ -19,10 +19,10 @@ env_1_args = {
     **env_args,
     **{
         'K': 5,
-        'sigma_omega_initial': 0.01,
-        'sigma_omega': 1.0,
+        'sigma_omega_initial': 1,
+        'sigma_omega': 0.1,
         'number_of_flips': 0,
-        'sigma_mu_organic': 30,
+        'sigma_mu_organic': 3,
         'change_omega_for_bandits': False,
     }
 }
@@ -77,13 +77,16 @@ class RecoEnv1(AbstractEnv):
     def update_state(self):
         self.state = self.rng.choice(3, p = self.state_transition[self.state, :])
         assert (hasattr(self, 'time_generator'))
+        old_time = self.current_time
         self.current_time = self.time_generator.new_time()
+        time_delta = self.current_time - old_time
+        omega_k = 1 if time_delta == 0 else time_delta
 
         # And update omega.
         if self.config.change_omega_for_bandits or self.state == organic:
             self.omega = self.rng.normal(
                 self.omega,
-                self.config.sigma_omega, size = (self.config.K, 1)
+                self.config.sigma_omega * omega_k, size = (self.config.K, 1)
             )
 
     # Sample a click as response to recommendation when user in bandit state

@@ -11,7 +11,7 @@ class Configuration:
     """
 
     def __init__(self, args):
-        self.args = args
+        # self.args = args
         # Set all key word arguments as attributes.
         for key in args:
             super(Configuration, self).__setattr__(key, args[key])

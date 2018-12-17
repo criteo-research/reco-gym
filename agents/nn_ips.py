@@ -7,22 +7,20 @@ from agents import AbstractFeatureProvider, ViewsFeaturesProvider, Model, ModelB
 from reco_gym import Configuration
 
 nn_ips_args = {
-    **{
-        'num_products': 10,
-        'sigma_omega': 1.0,
-        'number_of_flips': 1,
+    'num_products': 10,
+    'number_of_flips': 1,
 
-        'M': 111,
-        'learning_rate': 0.01,
-        'num_epochs': 100,
-        'num_hidden': 20,
-        'lambda_val': 0.01,
-    },
+    'M': 111,
+    'learning_rate': 0.01,
+    'num_epochs': 100,
+    'num_hidden': 20,
+    'lambda_val': 0.01,
 }
 
 
 class IpsLoss(nn.Module):
     """TBD"""
+
     def __init__(self, config):
         super(IpsLoss, self).__init__()
         self.config = config
@@ -39,6 +37,7 @@ class NeuralNet(nn.Module):
 
     This class implements a Neural Net model by using PyTorch.
     """
+
     def __init__(self, config):
         super(NeuralNet, self).__init__()
         self.config = config
@@ -92,7 +91,7 @@ class NnIpsModelBuilder(AbstractFeatureProvider):
                 super(TorchFeatureProvider, self).__init__(config)
 
             def features(self):
-                base_features = super().features()
+                base_features = super().features().reshape(1, self.config.num_products)
                 return torch.Tensor(base_features)
 
         class TorchModel(Model):
@@ -119,6 +118,7 @@ class NnIpsModelBuilder(AbstractFeatureProvider):
 
 class NnIpsAgent(ModelBasedAgent):
     """TBD"""
+
     def __init__(self, config = Configuration(nn_ips_args)):
         super(NnIpsAgent, self).__init__(
             config,

@@ -8,9 +8,10 @@ from reco_gym import Configuration
 from agents import BanditMFSquare, bandit_mf_square_args
 from agents import BanditCount, bandit_count_args
 from agents import RandomAgent, random_args
-from agents import LogregIpsAgent, logreg_ips_args
+from agents import LogregMulticlassIpsAgent, logreg_multiclass_ips_args
 from agents import NnIpsAgent, nn_ips_args
 from agents import OrganicCount, organic_count_args
+from agents import LogregPolyAgent, logreg_poly_args
 
 # Add a new environment here.
 env_test = {
@@ -23,9 +24,10 @@ agent_test = {
     'prod2vec': BanditMFSquare(Configuration(bandit_mf_square_args)),
     'logistic': BanditCount(Configuration(bandit_count_args)),
     'randomagent': RandomAgent(Configuration(random_args)),
-    'logreg_ips': LogregIpsAgent(Configuration(logreg_ips_args)),
+    'logreg_multiclass_ips': LogregMulticlassIpsAgent(Configuration(logreg_multiclass_ips_args)),
     'nn_ips': NnIpsAgent(Configuration(nn_ips_args)),
     'organic_counter': OrganicCount(Configuration(organic_count_args)),
+    'logreg_poly': LogregPolyAgent(Configuration(logreg_poly_args))
 }
 eval_size = 5
 organic_size = 5

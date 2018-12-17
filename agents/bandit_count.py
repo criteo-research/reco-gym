@@ -5,11 +5,12 @@ from reco_gym import Configuration
 from .abstract import Agent
 
 bandit_count_args = {
-    'num_products': 10
+    'num_products': 10,
 }
 
 
 class BanditCount(Agent):
+    """TBD"""
     def __init__(self, config = Configuration(bandit_count_args)):
         super(BanditCount, self).__init__(config)
 

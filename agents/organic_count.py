@@ -5,7 +5,7 @@ from reco_gym import Configuration
 
 
 organic_count_args = {
-    'num_products': 10
+    'num_products': 10,
 }
 
 
@@ -62,7 +62,10 @@ class OrganicCount(Agent):
     def train(self, observation, action, reward, done):
         """Train the model in an online fashion"""
         if observation.sessions():
-            A = to_categorical([session['v'] for session in observation.sessions()], self.config.num_products)
+            A = to_categorical(
+                [session['v'] for session in observation.sessions()],
+                self.config.num_products
+            )
             B = A.sum(0).reshape((self.config.num_products, 1))
             self.co_counts = self.co_counts + np.matmul(B, B.T)
 

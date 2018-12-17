@@ -11,7 +11,7 @@ organic_mf_square_args = {
     'mini_batch_size': 32,
     'loss_function': nn.CrossEntropyLoss(),
     'optim_function': optim.RMSprop,
-    'learning_rate': 0.01
+    'learning_rate': 0.01,
 }
 
 

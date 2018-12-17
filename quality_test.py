@@ -66,6 +66,8 @@ class TestNotebookConsistency(unittest.TestCase):
             'Compare Agents',
             'Likelihood Agents',
             'Inverse Propensity Score',
+            'Explore Exploit Evolution',
+            'Complex Time Behaviour',
             'Pure Organic vs Bandit - Number of Online Users',
         }:
             with self.subTest(i = case):

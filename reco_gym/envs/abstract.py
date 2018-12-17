@@ -190,7 +190,10 @@ class AbstractEnv(gym.Env):
         return action, observation, reward, done, info
 
     def generate_logs(self, num_offline_users, agent = None):
-        """Produce a DataFrame with the specified number of users"""
+        """
+        Produce logs of applying an Agent in the Environment for the specified amount of Users.
+        If the Agent is not provided, then the default Agent is used that randomly selects an Action.
+        """
 
         self.agent = RandomAgent(self.env, self.rng) if agent is None else agent
 

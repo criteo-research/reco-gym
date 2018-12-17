@@ -43,6 +43,7 @@ class ModelBuilder:
     the Feature Provider generates a Feature Set
     that is suitable for the Model.
     """
+
     def __init__(self, config):
         self.config = config
         self.data = None
@@ -112,6 +113,7 @@ class Model:
     Model
 
     """
+
     def __init__(self, config):
         self.config = config
 
@@ -133,6 +135,7 @@ class FeatureProvider:
     * collect data from which should be generated a Feature Set
     * generate a Feature Set suitable for a particular Model from previously collected data
     """
+
     def __init__(self, config):
         self.config = config
 
@@ -167,13 +170,13 @@ class FeatureProvider:
 
 class AbstractFeatureProvider(ModelBuilder):
     """TBD"""
+
     def __init__(self, config, weight_history_function = None):
         super(AbstractFeatureProvider, self).__init__(config)
         self.weight_history_function = weight_history_function
 
     def train_data(self):
         data = pd.DataFrame().from_dict(self.data)
-        num_products = int(data.v.max() + 1)
         number_of_users = int(data.u.max()) + 1
 
         features = []
@@ -182,7 +185,7 @@ class AbstractFeatureProvider(ModelBuilder):
         deltas = []
 
         for user_id in range(number_of_users):
-            views = np.zeros((0, num_products))
+            views = np.zeros((0, self.config.num_products))
             for _, user_datum in data[data['u'] == user_id].iterrows():
                 if user_datum['z'] == 'organic':
                     assert (math.isnan(user_datum['a']))
@@ -191,7 +194,7 @@ class AbstractFeatureProvider(ModelBuilder):
 
                     view = int(user_datum['v'])
 
-                    tmp_view = np.zeros(num_products)
+                    tmp_view = np.zeros(self.config.num_products)
                     tmp_view[view] = 1
 
                     # Append the latest view at the beginning of all views.
@@ -237,6 +240,7 @@ class ModelBasedAgent(Agent):
     * training
     * acting
     """
+
     def __init__(self, config, model_builder):
         super(ModelBasedAgent, self).__init__(config)
         self.model_builder = model_builder
@@ -283,6 +287,7 @@ class ViewsFeaturesProvider(FeatureProvider):
     * 3 --> 0
     * 4 --> 2
     """
+
     def __init__(self, config):
         super(ViewsFeaturesProvider, self).__init__(config)
         self.views = None
@@ -297,7 +302,7 @@ class ViewsFeaturesProvider(FeatureProvider):
             self.views = np.append(view, self.views, axis = 0)
 
     def features(self):
-        return np.sum(self.views, axis = 0).reshape(1, self.config.num_products)
+        return np.sum(self.views, axis = 0)
 
     def reset(self):
         super().reset()
