@@ -3,7 +3,6 @@ from torch import nn, optim, Tensor
 from .abstract import Agent
 from reco_gym import Configuration
 
-
 # Default Arguments ----------------------------------------------------------
 organic_mf_square_args = {
     'num_products': 10,
@@ -17,7 +16,13 @@ organic_mf_square_args = {
 
 # Model ----------------------------------------------------------------------
 class OrganicMFSquare(nn.Module, Agent):
-    """TBD"""
+    """
+    Organic Matrix Factorisation (Square)
+
+    The Agent that selects an Action from the model that performs
+     Organic Events matrix factorisation.
+    """
+
     def __init__(self, config = Configuration(organic_mf_square_args)):
         nn.Module.__init__(self)
         Agent.__init__(self, config)
@@ -61,7 +66,7 @@ class OrganicMFSquare(nn.Module, Agent):
             **super().act(observation, reward, done),
             **{
                 'a': self.action,
-                'ps': logits[self.action] if logits is not None else 1.0
+                'ps': 1.0,
             }
         }
 
@@ -88,7 +93,7 @@ class OrganicMFSquare(nn.Module, Agent):
         # Update weight parameters.
         self.optimizer.step()
 
-    def train(self, observation, action, reward, done):
+    def train(self, observation, action, reward, done = False):
         """Method to deal with the """
 
         # Increment step.

@@ -89,7 +89,7 @@ class ModelBuilder:
 
         The function generates a tuple: (FeatureProvider, Model)
         """
-        pass
+        raise NotImplemented
 
     def reset(self):
         """
@@ -148,15 +148,15 @@ class FeatureProvider:
         :param observation:
         :return:
         """
-        pass
+        raise NotImplemented
 
-    def features(self):
+    def features(self, observation):
         """
         Generate a Feature Set
 
         :return: a Feature Set suitable for a certain Model
         """
-        pass
+        raise NotImplemented
 
     def reset(self):
         """
@@ -165,28 +165,37 @@ class FeatureProvider:
         Clear all previously collected data.
         :return: nothing
         """
-        pass
+        raise NotImplemented
 
 
 class AbstractFeatureProvider(ModelBuilder):
-    """TBD"""
+    """
+    Abstract Feature Provider
 
-    def __init__(self, config, weight_history_function = None):
+    The Feature Provider that contains the common logic in
+    creation of a Feature Set that consists of:
+    * Views (count of Organic Events: Products views)
+    * Actions (Actions provided by an Agent)
+    * Propensity Scores: probability of selecting an Action by an Agent
+    * Delta (rewards: 1 -- there was a Click; 0 -- there was no)
+    """
+
+    def __init__(self, config):
         super(AbstractFeatureProvider, self).__init__(config)
-        self.weight_history_function = weight_history_function
 
     def train_data(self):
         data = pd.DataFrame().from_dict(self.data)
-        number_of_users = int(data.u.max()) + 1
 
         features = []
         actions = []
         pss = []
         deltas = []
 
-        for user_id in range(number_of_users):
+        for user_id in data['u'].unique():
             views = np.zeros((0, self.config.num_products))
+            history = np.zeros((0, 1))
             for _, user_datum in data[data['u'] == user_id].iterrows():
+                assert (not math.isnan(user_datum['t']))
                 if user_datum['z'] == 'organic':
                     assert (math.isnan(user_datum['a']))
                     assert (math.isnan(user_datum['c']))
@@ -199,6 +208,7 @@ class AbstractFeatureProvider(ModelBuilder):
 
                     # Append the latest view at the beginning of all views.
                     views = np.append(tmp_view[np.newaxis, :], views, axis = 0)
+                    history = np.append(np.array([user_datum['t']])[np.newaxis, :], history, axis = 0)
                 else:
                     assert (user_datum['z'] == 'bandit')
                     assert (not math.isnan(user_datum['a']))
@@ -208,13 +218,13 @@ class AbstractFeatureProvider(ModelBuilder):
                     action = int(user_datum['a'])
                     delta = int(user_datum['c'])
                     ps = user_datum['ps']
+                    time = user_datum['t']
 
-                    if self.weight_history_function is None:
-                        train_views = views
-                    else:
-                        history = np.array(range(views.shape[0])).reshape(views.shape[0], 1)
-                        weights = self.weight_history_function(history)
+                    if hasattr(self.config, 'weight_history_function'):
+                        weights = self.config.weight_history_function(time - history)
                         train_views = views * weights
+                    else:
+                        train_views = views
 
                     feature = np.sum(train_views, axis = 0)
 
@@ -257,13 +267,11 @@ class ModelBasedAgent(Agent):
         self.feature_provider.observe(observation)
         return {
             **super().act(observation, reward, done),
-            **self.model.act(observation, self.feature_provider.features()),
+            **self.model.act(observation, self.feature_provider.features(observation)),
         }
 
     def reset(self):
-        super().reset()
-        self.model_builder.reset()
-        if self.model:
+        if self.model is not None:
             assert (self.feature_provider is not None)
             self.feature_provider.reset()
             self.model.reset()
@@ -281,15 +289,16 @@ class ViewsFeaturesProvider(FeatureProvider):
     Amount of Products is 5.
     Then, the class returns the vector [0, 3, 7, 0, 2].
     That means that Products with IDs were viewed the following amount of times:
-    * 0 --> 0
-    * 1 --> 3
-    * 2 --> 7
-    * 3 --> 0
-    * 4 --> 2
+        * 0 --> 0
+        * 1 --> 3
+        * 2 --> 7
+        * 3 --> 0
+        * 4 --> 2
     """
 
     def __init__(self, config):
         super(ViewsFeaturesProvider, self).__init__(config)
+        self.history = None
         self.views = None
         self.reset()
 
@@ -300,10 +309,19 @@ class ViewsFeaturesProvider(FeatureProvider):
             view = np.zeros((1, self.config.num_products))
             view[:, session['v']] = 1
             self.views = np.append(view, self.views, axis = 0)
+            self.history = np.append(np.array([session['t']])[np.newaxis, :], self.history, axis = 0)
 
-    def features(self):
-        return np.sum(self.views, axis = 0)
+    def features(self, observation):
+        if (
+                hasattr(self.config, 'weight_history_function')
+                and self.config.weight_history_function is not None
+        ):
+            time = observation.context().time()
+            weights = self.config.weight_history_function(time - self.history)
+            return np.sum(self.views * weights, axis = 0)
+        else:
+            return np.sum(self.views, axis = 0)
 
     def reset(self):
-        super().reset()
         self.views = np.zeros((0, self.config.num_products))
+        self.history = np.zeros((0, 1))

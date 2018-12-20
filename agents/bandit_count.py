@@ -10,7 +10,12 @@ bandit_count_args = {
 
 
 class BanditCount(Agent):
-    """TBD"""
+    """
+    Bandit Count
+
+    The Agent that selects an Action for the most frequently clicked Action before.
+    """
+
     def __init__(self, config = Configuration(bandit_count_args)):
         super(BanditCount, self).__init__(config)
 
@@ -33,7 +38,7 @@ class BanditCount(Agent):
             },
         }
 
-    def train(self, observation, action, reward, done):
+    def train(self, observation, action, reward, done = False):
         """Train the model in an online fashion"""
 
         if action is not None and reward is not None:
@@ -60,3 +65,6 @@ class BanditCount(Agent):
 
         self.pulls_a = np.load(location + "pulls_a.npy")
         self.clicks_a = np.load(location + "clicks_a.npy")
+
+    def reset(self):
+        pass

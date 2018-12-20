@@ -12,7 +12,7 @@ class Session(list):
         return strings
 
     def get_type(self):
-        pass
+        raise NotImplemented
 
 
 class OrganicSessions(Session):

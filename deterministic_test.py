@@ -11,6 +11,7 @@ from agents import RandomAgent, random_args
 from agents import LogregMulticlassIpsAgent, logreg_multiclass_ips_args
 from agents import NnIpsAgent, nn_ips_args
 from agents import OrganicCount, organic_count_args
+from agents import OrganicUserEventCounterAgent, organic_user_count_args
 from agents import LogregPolyAgent, logreg_poly_args
 
 # Add a new environment here.
@@ -24,9 +25,28 @@ agent_test = {
     'prod2vec': BanditMFSquare(Configuration(bandit_mf_square_args)),
     'logistic': BanditCount(Configuration(bandit_count_args)),
     'randomagent': RandomAgent(Configuration(random_args)),
-    'logreg_multiclass_ips': LogregMulticlassIpsAgent(Configuration(logreg_multiclass_ips_args)),
+    'logreg_multiclass_ips': LogregMulticlassIpsAgent(Configuration(
+        {
+            **logreg_multiclass_ips_args,
+            'select_randomly': False,
+        })),
+    'logreg_multiclass_ips R': LogregMulticlassIpsAgent(Configuration(
+        {
+            **logreg_multiclass_ips_args,
+            'select_randomly': True,
+        })),
     'nn_ips': NnIpsAgent(Configuration(nn_ips_args)),
     'organic_counter': OrganicCount(Configuration(organic_count_args)),
+    'organic_user_counter': OrganicUserEventCounterAgent(Configuration(
+        {
+            **organic_user_count_args,
+            'select_randomly': False,
+        })),
+    'organic_user_counter R': OrganicUserEventCounterAgent(Configuration(
+        {
+            **organic_user_count_args,
+            'select_randomly': True,
+        })),
     'logreg_poly': LogregPolyAgent(Configuration(logreg_poly_args))
 }
 eval_size = 5

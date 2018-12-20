@@ -19,7 +19,9 @@ nn_ips_args = {
 
 
 class IpsLoss(nn.Module):
-    """TBD"""
+    """
+    IPS Loss Function
+    """
 
     def __init__(self, config):
         super(IpsLoss, self).__init__()
@@ -57,8 +59,6 @@ class NeuralNet(nn.Module):
 class NnIpsModelBuilder(AbstractFeatureProvider):
     """
     Neural Net Inverse Propensity Score Model Builder
-
-    TBD
     """
 
     def __init__(self, config):
@@ -90,8 +90,8 @@ class NnIpsModelBuilder(AbstractFeatureProvider):
             def __init__(self, config):
                 super(TorchFeatureProvider, self).__init__(config)
 
-            def features(self):
-                base_features = super().features().reshape(1, self.config.num_products)
+            def features(self, observation):
+                base_features = super().features(observation).reshape(1, self.config.num_products)
                 return torch.Tensor(base_features)
 
         class TorchModel(Model):

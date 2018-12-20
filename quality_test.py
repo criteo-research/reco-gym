@@ -69,6 +69,8 @@ class TestNotebookConsistency(unittest.TestCase):
             'Explore Exploit Evolution',
             'Complex Time Behaviour',
             'Pure Organic vs Bandit - Number of Online Users',
+            'Organic vs Likelihood',
+            'IPS vs Non-IPS',
         }:
             with self.subTest(i = case):
                 try:

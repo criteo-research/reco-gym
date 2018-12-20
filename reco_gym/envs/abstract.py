@@ -1,12 +1,19 @@
+from abc import ABC
+
 import gym
 import pandas as pd
 import numpy as np
 
-from gym.spaces import Discrete
 from numpy.random.mtrand import RandomState
-
-from reco_gym import Organic_Session
 from scipy.special import expit as sigmoid
+from gym.spaces import Discrete
+
+from .session import OrganicSessions
+from .context import DefaultContext
+from .configuration import Configuration
+from .observation import Observation
+
+from .features.time import DefaultTimeGenerator
 
 # Arguments shared between all environments.
 
@@ -18,7 +25,7 @@ env_args = {
     'prob_leave_bandit': 0.01,
     'prob_leave_organic': 0.01,
     'prob_bandit_to_organic': 0.05,
-    'prob_organic_to_bandit': 0.25
+    'prob_organic_to_bandit': 0.25,
 }
 
 
@@ -34,51 +41,43 @@ bandit = 1
 stop = 2
 
 
-# Define agent class.
-class RandomAgent:
-    def __init__(self, env, rng = None):
-        # Set Environment as an attribute of the Agent.
-        self.env = env
-        self.rng = RandomState(env['random_seed']) if rng is not None else rng
-
-    def act(self, observation, reward, done):
-        """
-        Act method returns an action based on a current observation and past history
-        """
-        prob = 1.0 / float(self.env['num_products'])
-        action = self.rng.choice(self.env['num_products'])
-
-        return {
-            'a': int(action),
-            'ps': prob
-        }
-
-    def reset(self):
-        pass
-
-
-class AbstractEnv(gym.Env):
+class AbstractEnv(gym.Env, ABC):
 
     def __init__(self):
-        self.first_step = True
+        gym.Env.__init__(self)
+        ABC.__init__(self)
 
-    def reset_random_seed(self):
+        self.first_step = True
+        self.config = None
+        self.state = None
+        self.current_user_id = None
+        self.current_time = None
+        self.empty_sessions = OrganicSessions()
+
+    def reset_random_seed(self, epoch = 0):
         # Initialize Random State.
-        self.rng = RandomState(self.random_seed)
+        assert (self.config.random_seed is not None)
+        self.rng = RandomState(self.config.random_seed + epoch)
 
     def init_gym(self, args):
 
-        self.env = args
-
-        # Set all key word arguments as attributes.
-        for key in args:
-            setattr(self, key, args[key])
+        self.config = Configuration(args)
 
         # Defining Action Space.
-        self.action_space = Discrete(self.num_products)
+        self.action_space = Discrete(self.config.num_products)
 
-        # Setting random seed for first time.
+        if 'time_generator' not in args:
+            self.time_generator = DefaultTimeGenerator(self.config)
+        else:
+            self.time_generator = self.config.time_generator
+
+        # Setting random seed for the first time.
         self.reset_random_seed()
+
+        if 'agent' not in args:
+            self.agent = None
+        else:
+            self.agent = self.config.agent
 
         # Setting any static parameters such as transition probabilities.
         self.set_static_params()
@@ -86,26 +85,33 @@ class AbstractEnv(gym.Env):
         # Set random seed for second time, ensures multiple epochs possible.
         self.reset_random_seed()
 
-    def reset(self):
+    def reset(self, user_id = 0):
         # Current state.
-        self.state = organic  # Manually set first state as Organic.
         self.first_step = True
+        self.state = organic  # Manually set first state as Organic.
 
-        # Record number of times each product seen for static policy calculation.
-        self.organic_views = np.zeros(self.num_products)
-
-        if hasattr(self, 'agent'):
+        self.time_generator.reset()
+        if self.agent:
             self.agent.reset()
 
-    def generate_organic_session(self):
+        self.current_time = self.time_generator.new_time()
+        self.current_user_id = user_id
+
+        # Record number of times each product seen for static policy calculation.
+        self.organic_views = np.zeros(self.config.num_products)
+
+    def generate_organic_sessions(self):
 
         # Initialize session.
-        session = Organic_Session()
+        session = OrganicSessions()
 
         while self.state == organic:
             # Add next product view.
             self.update_product_view()
-            session.next(self.product_view)
+            session.next(
+                DefaultContext(self.current_time, self.current_user_id),
+                self.product_view
+            )
 
             # Update markov state.
             self.update_state()
@@ -149,27 +155,47 @@ class AbstractEnv(gym.Env):
         if self.first_step:
             assert (action_id is None)
             self.first_step = False
-            observation = self.generate_organic_session()
-            return observation, None, None, info
+            sessions = self.generate_organic_sessions()
+            return (
+                Observation(
+                    DefaultContext(
+                        self.current_time,
+                        self.current_user_id
+                    ),
+                    sessions
+                ),
+                None,
+                None,
+                info
+            )
 
         assert (action_id is not None)
         # Calculate reward from action.
         reward = self.draw_click(action_id)
 
         self.update_state()
+
         if reward == 1:
             self.state = organic  # Clicks are followed by Organic.
 
         # Markov state dependent logic.
         if self.state == organic:
-            observation = self.generate_organic_session()
+            sessions = self.generate_organic_sessions()
         else:
-            observation = None
+            sessions = self.empty_sessions
 
         # Update done flag.
         done = True if self.state == stop else False
 
-        return observation, reward, done, info
+        return (
+            Observation(
+                DefaultContext(self.current_time, self.current_user_id),
+                sessions
+            ),
+            reward,
+            done,
+            info
+        )
 
     def step_offline(self, observation, reward, done):
         """Call step function wih the policy implemented by a particular Agent."""
@@ -177,12 +203,17 @@ class AbstractEnv(gym.Env):
         if self.first_step:
             action = None
         else:
-            if hasattr(self, 'agent'):
+            assert (hasattr(self, 'agent'))
+            assert (observation is not None)
+            if self.agent:
                 action = self.agent.act(observation, reward, done)
             else:
+                # Select a Product randomly.
                 action = {
-                    'a': int(self.rng.choice(self.num_products)),
-                    'ps': 1.0 / self.num_products
+                    't': observation.context().time(),
+                    'u': observation.context().user(),
+                    'a': int(self.rng.choice(self.config.num_products)),
+                    'ps': 1.0 / self.config.num_products,
                 }
 
         observation, reward, done, info = self.step(action['a'] if action is not None else None)
@@ -195,7 +226,7 @@ class AbstractEnv(gym.Env):
         If the Agent is not provided, then the default Agent is used that randomly selects an Action.
         """
 
-        self.agent = RandomAgent(self.env, self.rng) if agent is None else agent
+        self.agent = agent
 
         data = {
             't': [],
@@ -206,35 +237,33 @@ class AbstractEnv(gym.Env):
             'c': [],
             'ps': [],
         }
-
-        time = 0
-
         for user_id in range(num_offline_users):
-            self.reset()
+            self.reset(user_id)
             observation, reward, done, _ = self.step(None)
+            assert (observation is not None)
+            assert (reward is None)
 
             while not done:
-                if observation is not None:
-                    for event in observation:
-                        data['t'].append(time)
-                        data['u'].append(user_id)
-                        data['z'].append('organic')
-                        data['v'].append(event[1])
-                        data['a'].append(None)
-                        data['c'].append(None)
-                        data['ps'].append(None)
-                        time += 1
+                assert (observation is not None)
+                assert (observation.sessions() is not None)
+                for session in observation.sessions():
+                    data['t'].append(session['t'])
+                    data['u'].append(session['u'])
+                    data['z'].append('organic')
+                    data['v'].append(session['v'])
+                    data['a'].append(None)
+                    data['c'].append(None)
+                    data['ps'].append(None)
 
                 action, observation, reward, done, info = self.step_offline(observation, reward, done)
 
-                data['t'].append(time)
-                data['u'].append(user_id)
+                data['t'].append(action['t'])
+                data['u'].append(action['u'])
                 data['z'].append('bandit')
                 data['v'].append(None)
                 data['a'].append(action['a'])
                 data['c'].append(reward)
                 data['ps'].append(action['ps'])
-                time += 1
 
                 if done:
                     break

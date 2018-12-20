@@ -3,7 +3,6 @@ import numpy as np
 from agents import Agent
 from reco_gym import Configuration
 
-
 organic_count_args = {
     'num_products': 10,
 }
@@ -39,7 +38,12 @@ def to_categorical(y, num_classes = None, dtype = 'float32'):
 
 
 class OrganicCount(Agent):
-    """TBD"""
+    """
+    Organic Count
+
+    The Agent that selects an Action based on the most frequently viewed Product.
+    """
+
     def __init__(self, config = Configuration(organic_count_args)):
         super(OrganicCount, self).__init__(config)
 
@@ -59,7 +63,7 @@ class OrganicCount(Agent):
             },
         }
 
-    def train(self, observation, action, reward, done):
+    def train(self, observation, action, reward, done = False):
         """Train the model in an online fashion"""
         if observation.sessions():
             A = to_categorical(

@@ -11,6 +11,9 @@ from agents import (
 from reco_gym import Configuration
 
 logreg_poly_args = {
+    'num_products': 10,
+    'random_seed': 42,
+
     'poly_degree': 2,
 
     'with_ips': False,
@@ -20,13 +23,14 @@ logreg_poly_args = {
 
 
 class LogregPolyModelBuilder(AbstractFeatureProvider):
-    def __init__(self, config, weight_history_function = None):
+    def __init__(self, config):
         super(LogregPolyModelBuilder, self).__init__(config)
-        self.weight_history_function = weight_history_function
 
     def build(self):
         class LogisticRegressionPolyFeaturesProvider(ViewsFeaturesProvider):
-            """TBD"""
+            """
+            Logistic Regression Polynomial Feature Provider
+            """
 
             def __init__(self, config, poly, poly_selection_flags):
                 super(LogisticRegressionPolyFeaturesProvider, self).__init__(config)
@@ -36,13 +40,15 @@ class LogregPolyModelBuilder(AbstractFeatureProvider):
                 ixs = np.array(range(self.config.num_products))
                 self.features_with_actions[ixs, self.config.num_products + ixs] = 1
 
-            def features(self):
+            def features(self, observation):
                 features_with_actions = self.features_with_actions.copy()
-                features_with_actions[:, :self.config.num_products] = super().features()
-                return self.poly.fit_transform(features_with_actions)[:, self.poly_selection_flags]
+                features_with_actions[:, :self.config.num_products] = super().features(observation)
+                return self.poly.transform(features_with_actions)[:, self.poly_selection_flags]
 
         class LogisticRegressionModel(Model):
-            """TBD"""
+            """
+            Logistic Regression Model
+            """
 
             def __init__(self, config, logreg):
                 super(LogisticRegressionModel, self).__init__(config)
@@ -55,7 +61,7 @@ class LogregPolyModelBuilder(AbstractFeatureProvider):
                     **super().act(observation, features),
                     **{
                         'a': action,
-                        'ps': action_proba[action]
+                        'ps': 1.0,
                     },
                 }
 
@@ -93,7 +99,7 @@ class LogregPolyModelBuilder(AbstractFeatureProvider):
 
 class LogregPolyAgent(ModelBasedAgent):
     """
-    TBD
+    Logistic Regression Polynomial Agent
     """
 
     def __init__(self, config = Configuration(logreg_poly_args)):

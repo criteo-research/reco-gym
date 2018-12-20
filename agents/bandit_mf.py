@@ -5,7 +5,6 @@ from reco_gym import Configuration
 
 from .abstract import Agent
 
-
 # Default Arguments.
 bandit_mf_square_args = {
     'num_products': 10,
@@ -104,7 +103,7 @@ class BanditMFSquare(nn.Module, Agent):
         # Update weight parameters.
         self.optimizer.step()
 
-    def train(self, observation, action, reward, done):
+    def train(self, observation, action, reward, done = False):
         # Update last product viewed.
         self.update_lpv(observation)
 

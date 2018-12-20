@@ -18,7 +18,7 @@ class Configuration:
         Configuration.__slots__ = [key for key in args]
 
     def __setattr__(self, key, value):
-        raise AttributeError("Configuration class is immutable!")
+        pass
 
     def __deepcopy__(self, memodict={}):
         return self

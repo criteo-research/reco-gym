@@ -4,7 +4,7 @@ class TimeGenerator:
         self.config = config
 
     def new_time(self):
-        pass
+        raise NotImplemented
 
     def reset(self):
-        pass
+        raise NotImplemented

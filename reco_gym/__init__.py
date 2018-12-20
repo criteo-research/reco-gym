@@ -4,9 +4,19 @@ from .envs import Configuration
 from .envs import Session
 from .envs import Context, DefaultContext
 
+from .constants import (
+    AgentStats,
+    AgentInit,
+    EvolutionCase,
+    TrainingApproach,
+)
 from .bench_agents import test_agent
 from .evolute_agent import evolute_agent
-from .evolute_agent import TrainingApproach, EvolutionCase
+from .evolute_agent import (
+    build_agent_init,
+    gather_agent_stats,
+    plot_agent_stats
+)
 
 from .envs.features.time.default_time_generator import DefaultTimeGenerator
 from .envs.features.time.normal_time_generator import NormalTimeGenerator

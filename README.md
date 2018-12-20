@@ -2,25 +2,29 @@
 
 Python code for the RecSys 2018 REVEAL workshop paper entitled 'RecoGym: A Reinforcement Learning Environment for the problem of Product Recommendation in Online Advertising'. A pre-print version of the paper can be found here - https://arxiv.org/abs/1808.00720
 
-RecoGym is a Open-AI gym RL environment for recommendation, which is defined by a model of user traffic patterns on e-commerce and the users response to recommendations on the publisher websites. We hope that RecoGym will be an important step forward for the field of recommendation systems research, that could open up an avenue of collaboration between the recommender systems and reinforcement learning communities and lead to better alignment between offline and online performance metrics.
+_RecoGym_ is a Open-AI gym RL environment for recommendation, which is defined by a model of user traffic patterns on e-commerce and the users response to recommendations on the publisher websites. We hope that _RecoGym_ will be an important step forward for the field of recommendation systems research, that could open up an avenue of collaboration between the recommender systems and reinforcement learning communities and lead to better alignment between offline and online performance metrics.
 
-For getting starting with RecoGym please view the 'Getting Started' Jupyter Notebook which will explain the functionality of the environment and detail the creation of a simple agent. The 'Compare Agent' notebook compares the recommendation performance of a selection of our included agents. The agent we include with RecoGym can be found in the agents directory of this repository. 
+For getting starting with _RecoGym_ please view the 'Getting Started' Jupyter Notebook which will explain the functionality of the environment and detail the creation of a simple agent. The 'Compare Agent' notebook compares the recommendation performance of a selection of our included agents. The agent we include with _RecoGym_ can be found in the agents directory of this repository. 
 
 ## Dependencies and Requirements
-The code has been designed to support python 3.6+ only. The project has the following dependencies and version requirements:
+The code has been designed to support python 3.7+ only. The project has the following dependencies and version requirements:
 
-- python3 - 3.6.5+
-- numpy - 1.14.5+
-- scipy - 1.1+
-- pandas - 0.22+
-- gym - 0.10.5+
-- torch - 0.4.1+
+- notebook=5.6.0+
+- matplotlib=2.2.3+
+- numpy=1.15.1+
+- python=3.7.1+
+- pandas=0.23.4+
+- scipy=1.1.0+
+- pytorch=1.0+
+- rpy2=2.9.1+
+- scikit-learn=0.20.1+
 
 In this repository we provide a Anaconda environment setup file with all the required python packages and versions all ready configured. You can install it as follows:
 
 ```bash
 # install conda env
 conda install -c conda conda-env
+conda install -c r r-essentials
 
 # create environment based on environment.yml
 conda-env create environment.yml

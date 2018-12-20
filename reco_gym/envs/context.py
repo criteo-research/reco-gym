@@ -1,10 +1,10 @@
 class Context:
 
     def time(self):
-        pass
+        raise NotImplemented
 
     def user(self):
-        pass
+        raise NotImplemented
 
 
 class DefaultContext(Context):
