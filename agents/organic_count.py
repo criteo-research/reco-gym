@@ -55,11 +55,15 @@ class OrganicCount(Agent):
 
         self.update_lpv(observation)
 
+        action = self.co_counts[self.last_product_viewed, :].argmax()
+        ps_all = np.zeros(self.config.num_products)
+        ps_all[action] = 1.0
         return {
             **super().act(observation, reward, done),
             **{
                 'a': self.co_counts[self.last_product_viewed, :].argmax(),
                 'ps': 1.0,
+                'ps-a': ps_all,
             },
         }
 

@@ -3,6 +3,8 @@ from torch import nn, optim, Tensor
 from .abstract import Agent
 from reco_gym import Configuration
 
+import numpy as np
+
 # Default Arguments ----------------------------------------------------------
 organic_mf_square_args = {
     'num_products': 10,
@@ -62,11 +64,14 @@ class OrganicMFSquare(nn.Module, Agent):
             # No exploration strategy, choose maximum logit.
             self.action = logits.argmax().item()
 
+        all_ps = np.zeros(self.config.num_products)
+        all_ps[self.action] = 1.0
         return {
             **super().act(observation, reward, done),
             **{
                 'a': self.action,
                 'ps': 1.0,
+                'ps-a': all_ps,
             }
         }
 

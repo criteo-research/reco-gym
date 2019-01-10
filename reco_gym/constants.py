@@ -48,3 +48,14 @@ class EvolutionCase(Enum):
     ACTIONS = 2
     SUCCESS_GREEDY = 3
     FAILURE_GREEDY = 4
+
+
+class RoiMetrics(Enum):
+    """
+    Return of Investment Data.
+    """
+    ROI_MEAN = 0
+    ROI_0_025 = 1
+    ROI_0_975 = 2
+    ROI_SUCCESS = 3
+    ROI_FAILURE = 4

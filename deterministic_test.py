@@ -20,34 +20,47 @@ env_test = {
     "reco-gym-v0": env_0_args,
 }
 
+RandomSeed = 42
+
 # Add a new agent here.
 agent_test = {
     'prod2vec': BanditMFSquare(Configuration(bandit_mf_square_args)),
     'logistic': BanditCount(Configuration(bandit_count_args)),
-    'randomagent': RandomAgent(Configuration(random_args)),
-    'logreg_multiclass_ips': LogregMulticlassIpsAgent(Configuration(
-        {
-            **logreg_multiclass_ips_args,
-            'select_randomly': False,
-        })),
-    'logreg_multiclass_ips R': LogregMulticlassIpsAgent(Configuration(
-        {
-            **logreg_multiclass_ips_args,
-            'select_randomly': True,
-        })),
-    'nn_ips': NnIpsAgent(Configuration(nn_ips_args)),
+    'randomagent': RandomAgent(Configuration({
+        **random_args,
+        'random_seed': RandomSeed,
+    })),
+    'logreg_multiclass_ips': LogregMulticlassIpsAgent(Configuration({
+        **logreg_multiclass_ips_args,
+        'select_randomly': False,
+    })),
+    'logreg_multiclass_ips R': LogregMulticlassIpsAgent(Configuration({
+        **logreg_multiclass_ips_args,
+        'select_randomly': True,
+        'random_seed': RandomSeed,
+    })),
+    'nn_ips': NnIpsAgent(Configuration({
+        **nn_ips_args,
+        'random_seed': RandomSeed,
+    })),
     'organic_counter': OrganicCount(Configuration(organic_count_args)),
-    'organic_user_counter': OrganicUserEventCounterAgent(Configuration(
-        {
-            **organic_user_count_args,
-            'select_randomly': False,
-        })),
-    'organic_user_counter R': OrganicUserEventCounterAgent(Configuration(
-        {
-            **organic_user_count_args,
-            'select_randomly': True,
-        })),
-    'logreg_poly': LogregPolyAgent(Configuration(logreg_poly_args))
+    'organic_user_counter': OrganicUserEventCounterAgent(Configuration({
+        **organic_user_count_args,
+        'select_randomly': False,
+    })),
+    'organic_user_counter R': OrganicUserEventCounterAgent(Configuration({
+        **organic_user_count_args,
+        'select_randomly': True,
+        'random_seed': RandomSeed,
+    })),
+    'logreg_poly': LogregPolyAgent(Configuration({
+        **logreg_poly_args,
+        'with_ips': False,
+    })),
+    'logreg_poly_ips': LogregPolyAgent(Configuration({
+        **logreg_poly_args,
+        'with_ips': True,
+    })),
 }
 eval_size = 5
 organic_size = 5

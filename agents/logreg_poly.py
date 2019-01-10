@@ -12,11 +12,19 @@ from reco_gym import Configuration
 
 logreg_poly_args = {
     'num_products': 10,
-    'random_seed': 42,
+    'random_seed': np.random.randint(2 ** 31 - 1),
 
     'poly_degree': 2,
 
     'with_ips': False,
+    # Should deltas (rewards) be used to calculate weights?
+    # If delta should not be used as a IPS numerator, than `1.0' is used.
+    'ips_numerator_is_delta': False,
+    # Should clipping be used to calculate Inverse Propensity Score?
+    'ips_with_clipping': False,
+    # Clipping value that limits the value of Inverse Propensity Score.
+    'ips_clipping_value': 10,
+    
     'solver': 'lbfgs',
     'max_iter': 5000,
 }
@@ -57,11 +65,14 @@ class LogregPolyModelBuilder(AbstractFeatureProvider):
             def act(self, observation, features):
                 action_proba = self.logreg.predict_proba(features)[:, 1]
                 action = np.argmax(action_proba)
+                ps_all = np.zeros(self.config.num_products)
+                ps_all[action] = 1.0
                 return {
                     **super().act(observation, features),
                     **{
                         'a': action,
                         'ps': 1.0,
+                        'ps-a': ps_all,
                     },
                 }
 
@@ -86,7 +97,10 @@ class LogregPolyModelBuilder(AbstractFeatureProvider):
         feature_selection_flags = only_first_degree | only_with_actions
 
         if self.config.with_ips:
-            weights = np.minimum(deltas / pss, self.config.num_products)
+            ips_numerator = deltas if self.config.ips_numerator_is_delta else 1.0
+            weights = ips_numerator / pss
+            if self.config.ips_with_clipping:
+                weights = np.minimum(deltas / pss, self.config.ips_clipping_value)
             lr = logreg.fit(features_poly[:, feature_selection_flags], deltas, weights)
         else:
             lr = logreg.fit(features_poly[:, feature_selection_flags], deltas)

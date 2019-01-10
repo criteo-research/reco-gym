@@ -214,6 +214,7 @@ class AbstractEnv(gym.Env, ABC):
                     'u': observation.context().user(),
                     'a': int(self.rng.choice(self.config.num_products)),
                     'ps': 1.0 / self.config.num_products,
+                    'ps-a': np.ones(self.config.num_products) / self.config.num_products,
                 }
 
         observation, reward, done, info = self.step(action['a'] if action is not None else None)
@@ -236,6 +237,7 @@ class AbstractEnv(gym.Env, ABC):
             'a': [],
             'c': [],
             'ps': [],
+            'ps-a': [],
         }
         for user_id in range(num_offline_users):
             self.reset(user_id)
@@ -254,6 +256,7 @@ class AbstractEnv(gym.Env, ABC):
                     data['a'].append(None)
                     data['c'].append(None)
                     data['ps'].append(None)
+                    data['ps-a'].append(None)
 
                 action, observation, reward, done, info = self.step_offline(observation, reward, done)
 
@@ -264,6 +267,7 @@ class AbstractEnv(gym.Env, ABC):
                 data['a'].append(action['a'])
                 data['c'].append(reward)
                 data['ps'].append(action['ps'])
+                data['ps-a'].append(action['ps-a'])
 
                 if done:
                     break

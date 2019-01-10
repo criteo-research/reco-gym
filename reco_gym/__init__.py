@@ -9,13 +9,18 @@ from .constants import (
     AgentInit,
     EvolutionCase,
     TrainingApproach,
+    RoiMetrics
 )
 from .bench_agents import test_agent
 from .evolute_agent import evolute_agent
 from .evolute_agent import (
     build_agent_init,
     gather_agent_stats,
-    plot_agent_stats
+    plot_agent_stats,
+    gather_exploration_stats,
+    plot_evolution_stats,
+    plot_heat_actions,
+    plot_roi
 )
 
 from .envs.features.time.default_time_generator import DefaultTimeGenerator

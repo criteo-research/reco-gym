@@ -6,14 +6,13 @@ from reco_gym import Configuration
 
 organic_user_count_args = {
     'num_products': 10,
+    'random_seed': np.random.randint(2 ** 31 - 1),
 
     # Select a Product randomly with the highest probability for the most frequently viewed product.
     'select_randomly': True,
 
     # Weight History Function: how treat each event back in time.
     'weight_history_function': None,
-
-    'random_seed': 42,
 }
 
 
@@ -38,14 +37,18 @@ class OrganicUserEventCounterModelBuilder(AbstractFeatureProvider):
                 if self.config.select_randomly:
                     action = self.rng.choice(self.config.num_products, p = action_proba)
                     ps = action_proba[action]
+                    ps_all = action_proba
                 else:
                     action = np.argmax(action_proba)
                     ps = 1.0
+                    ps_all = np.zeros(self.config.num_products)
+                    ps_all[action] = 1.0
                 return {
                     **super().act(observation, features),
                     **{
                         'a': action,
                         'ps': ps,
+                        'ps-a': ps_all,
                     },
                 }
 

@@ -71,6 +71,7 @@ class TestNotebookConsistency(unittest.TestCase):
             'Pure Organic vs Bandit - Number of Online Users',
             'Organic vs Likelihood',
             'IPS vs Non-IPS',
+            'Epsilon Worse',
         }:
             with self.subTest(i = case):
                 try:

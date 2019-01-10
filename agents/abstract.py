@@ -73,6 +73,7 @@ class ModelBuilder:
             self.data['a'].append(None)
             self.data['c'].append(None)
             self.data['ps'].append(None)
+            self.data['ps-a'].append(None)
 
         if action:
             self.data['t'].append(action['t'])
@@ -82,6 +83,7 @@ class ModelBuilder:
             self.data['a'].append(action['a'])
             self.data['c'].append(reward)
             self.data['ps'].append(action['ps'])
+            self.data['ps-a'].append(action['ps-a'] if 'ps-a' in action else None)
 
     def build(self):
         """
@@ -105,6 +107,7 @@ class ModelBuilder:
             'a': [],
             'c': [],
             'ps': [],
+            'ps-a': [],
         }
 
 

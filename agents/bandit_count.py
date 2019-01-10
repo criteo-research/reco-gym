@@ -29,12 +29,15 @@ class BanditCount(Agent):
 
         self.update_lpv(observation)
         action = self.ctr[self.last_product_viewed, :].argmax()
+        ps_all = np.zeros(self.config.num_products)
+        ps_all[action] = 1.0
 
         return {
             **super().act(observation, reward, done),
             **{
                 'a': self.ctr[self.last_product_viewed, :].argmax(),
                 'ps': self.ctr[self.last_product_viewed, :][action],
+                'ps-a': ps_all,
             },
         }
 

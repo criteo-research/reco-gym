@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 from torch import nn, optim, Tensor
 
 from reco_gym import Configuration
@@ -75,12 +76,15 @@ class BanditMFSquare(nn.Module, Agent):
 
         # No exploration strategy, choose maximum logit.
         action = logits.argmax().item()
+        all_ps = np.zeros(self.config.num_products)
+        all_ps[action] = 1.0
 
         return {
             **super().act(observation, reward, done),
             **{
                 'a': action,
                 'ps': logits[action],
+                'ps-a': all_ps,
             },
         }
 

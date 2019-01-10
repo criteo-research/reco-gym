@@ -1,3 +1,5 @@
+import numpy as np
+
 from numpy.random.mtrand import RandomState
 from sklearn.linear_model import LogisticRegression
 
@@ -7,7 +9,7 @@ from reco_gym import Configuration
 logreg_multiclass_ips_args = {
     'num_products': 10,
     'number_of_flips': 1,
-    'random_seed': 42,
+    'random_seed': np.random.randint(2 ** 31 - 1),
 
     # Select a Product randomly with the the probability predicted by Multi-Class Logistic Regression.
     'select_randomly': False,
@@ -64,14 +66,18 @@ class LogregMulticlassIpsModelBuilder(AbstractFeatureProvider):
                         p = action_proba
                     )
                     ps = action_proba[action]
+                    all_ps = action_proba
                 else:
                     action = self.logreg.predict(features).item()
                     ps = 1.0
+                    all_ps = np.zeros(self.config.num_products)
+                    all_ps[action] = 1.0
                 return {
                     **super().act(observation, features),
                     **{
                         'a': action,
                         'ps': ps,
+                        'ps-a': all_ps,
                     },
                 }
 

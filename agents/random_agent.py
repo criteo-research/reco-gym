@@ -1,4 +1,5 @@
 # Default Arguments.
+import numpy as np
 from numpy.random.mtrand import RandomState
 
 from agents import Agent
@@ -6,7 +7,7 @@ from reco_gym import Configuration
 
 random_args = {
     'num_products': 10,
-    'random_seed': 42,
+    'random_seed': np.random.randint(2 ** 31 - 1),
 }
 
 
@@ -23,5 +24,6 @@ class RandomAgent(Agent):
             **{
                 'a': self.rng.choice(self.config.num_products),
                 'ps': 1.0 / float(self.config.num_products),
+                'ps-a': np.ones(self.config.num_products) / self.config.num_products,
             },
         }

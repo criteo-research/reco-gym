@@ -1,6 +1,8 @@
 import numpy as np
 import torch
 import torch.optim as optim
+
+from numpy.random.mtrand import RandomState
 from torch import nn
 
 from agents import AbstractFeatureProvider, ViewsFeaturesProvider, Model, ModelBasedAgent
@@ -9,6 +11,10 @@ from reco_gym import Configuration
 nn_ips_args = {
     'num_products': 10,
     'number_of_flips': 1,
+    'random_seed': np.random.randint(2 ** 31 - 1),
+
+    # Select a Product randomly with the the probability predicted by Neural Network with IPS.
+    'select_randomly': False,
 
     'M': 111,
     'learning_rate': 0.01,
@@ -98,15 +104,28 @@ class NnIpsModelBuilder(AbstractFeatureProvider):
             def __init__(self, config, model):
                 super(TorchModel, self).__init__(config)
                 self.model = model
+                if self.config.select_randomly:
+                    self.rng = RandomState(self.config.random_seed)
 
             def act(self, observation, features):
                 prob = self.model.forward(features)[0, :]
-                action = torch.argmax(prob).item()
+                if self.config.select_randomly:
+                    prob = prob.detach().numpy()
+                    action = self.rng.choice(
+                        np.array(self.config.num_products),
+                        p = prob
+                    )
+                    ps_all = prob
+                else:
+                    action = torch.argmax(prob).item()
+                    ps_all = np.zeros(self.config.num_products)
+                    ps_all[action] = 1.0
                 return {
                     **super().act(observation, features),
                     **{
                         'a': action,
                         'ps': prob[action].item(),
+                        'ps-a': ps_all,
                     },
                 }
 
@@ -117,7 +136,9 @@ class NnIpsModelBuilder(AbstractFeatureProvider):
 
 
 class NnIpsAgent(ModelBasedAgent):
-    """TBD"""
+    """
+    Neural Network Agent with IPS
+    """
 
     def __init__(self, config = Configuration(nn_ips_args)):
         super(NnIpsAgent, self).__init__(
