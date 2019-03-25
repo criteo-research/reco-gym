@@ -21,7 +21,7 @@ GraphCTRMin = 0.009
 GraphCTRMax = 0.021
 
 
-def evolute_agent(
+def evaluate_agent(
         env,
         agent,
         num_initial_train_users = 100,
@@ -278,7 +278,7 @@ def _collect_evolution_stats(args):
     epsilon_key = format_epsilon(epsilon)
     print(f"Start: ε = {epsilon_key}")
     num_evolution_steps = args['num_evolution_steps']
-    rewards = reco_gym.evolute_agent(
+    rewards = reco_gym.evaluate_agent(
         deepcopy(args['env']),
         args['agent'],
         args['num_initial_train_users'],

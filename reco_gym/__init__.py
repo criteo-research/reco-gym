@@ -12,8 +12,8 @@ from .constants import (
     RoiMetrics
 )
 from .bench_agents import test_agent
-from .evolute_agent import evolute_agent
-from .evolute_agent import (
+from .evaluate_agent import (
+    evaluate_agent,
     build_agent_init,
     gather_agent_stats,
     plot_agent_stats,
