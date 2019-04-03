@@ -1,45 +1,45 @@
 import torch
+import numpy as np
 from torch import nn, optim, Tensor
 
-# Default Arguments ----------------------------------------------------------
+from reco_gym import Configuration
 
-bandit_mf_square_args = {}
+from .abstract import Agent
 
-bandit_mf_square_args['num_products'] = 10
-bandit_mf_square_args['embed_dim'] = 5
+# Default Arguments.
+bandit_mf_square_args = {
+    'num_products': 10,
+    'embed_dim': 5,
+    'mini_batch_size': 32,
+    'loss_function': nn.BCEWithLogitsLoss(),
+    'optim_function': optim.RMSprop,
+    'learning_rate': 0.01,
+}
 
-bandit_mf_square_args['mini_batch_size'] = 32
 
-bandit_mf_square_args['loss_function'] = nn.BCEWithLogitsLoss()
-bandit_mf_square_args['optim_function'] = optim.RMSprop
-bandit_mf_square_args['learning_rate'] = 0.01
-
-# Model ----------------------------------------------------------------------
-class BanditMFSquare(nn.Module):
-    def __init__(self, args):
-        super().__init__()
-
-        # set all key word arguments as attributes
-        for key in args:
-            setattr(self, key, args[key])
+# Model.
+class BanditMFSquare(nn.Module, Agent):
+    def __init__(self, config = Configuration(bandit_mf_square_args)):
+        nn.Module.__init__(self)
+        Agent.__init__(self, config)
 
         self.product_embedding = nn.Embedding(
-            self.num_products, self.embed_dim
+            self.config.num_products, self.config.embed_dim
         )
         self.user_embedding = nn.Embedding(
-            self.num_products, self.embed_dim
+            self.config.num_products, self.config.embed_dim
         )
 
-        # initializing optimizer type
-        self.optimizer = self.optim_function(
-            self.parameters(), lr=self.learning_rate
+        # Initializing optimizer type.
+        self.optimizer = self.config.optim_function(
+            self.parameters(), lr = self.config.learning_rate
         )
 
         self.last_product_viewed = None
         self.curr_step = 0
         self.train_data = []
 
-    def forward(self, product, user=None):
+    def forward(self, product, user = None):
         if user is None:
             user = self.last_product_viewed
 
@@ -52,62 +52,73 @@ class BanditMFSquare(nn.Module):
         return torch.dot(a, b)
 
     def get_logits(self):
-        """returns vector of product recommendation logits"""
-        logits = Tensor(self.num_products)
+        """Returns vector of product recommendation logits"""
+        logits = Tensor(self.config.num_products)
 
-        for product in range(self.num_products):
+        for product in range(self.config.num_products):
             logits[product] = self.forward(product)
 
         return logits
 
     def update_lpv(self, observation):
-        """updates the last product viewed based on the observation"""
-        if observation is not None:
-            self.last_product_viewed = observation[-1][-1]
+        """Updates the last product viewed based on the observation"""
+        assert (observation is not None)
+        assert (observation.sessions() is not None)
+        if observation.sessions():
+            self.last_product_viewed = observation.sessions()[-1]['v']
 
     def act(self, observation, reward, done):
-        # update last product viewed
+        # Update last product viewed.
         self.update_lpv(observation)
 
-        # get logits for all possible actions
+        # Get logits for all possible actions.
         logits = self.get_logits()
 
-        # no exploration strategy, choose maximum logit
+        # No exploration strategy, choose maximum logit.
         action = logits.argmax().item()
+        all_ps = np.zeros(self.config.num_products)
+        all_ps[action] = 1.0
 
-        return action
+        return {
+            **super().act(observation, reward, done),
+            **{
+                'a': action,
+                'ps': logits[action],
+                'ps-a': all_ps,
+            },
+        }
 
     def update_weights(self):
-        """update weights of embedding matrices using mini batch of data"""
-        # eliminate previous gradient
+        """Update weights of embedding matrices using mini batch of data"""
+        # Eliminate previous gradient.
         self.optimizer.zero_grad()
 
         for lpv, action, reward in self.train_data:
-            # calculating logit of action and last product viewed
+            # Calculating logit of action and last product viewed.
             logit = self.forward(action, lpv)
 
-            # converting reward into Tensor
+            # Converting reward into Tensor.
             reward = Tensor([reward]).squeeze()
 
-            # calculating supervised loss
-            loss = self.loss_function(logit, reward)
+            # Calculating supervised loss.
+            loss = self.config.loss_function(logit, reward)
             loss.backward()
 
-        # update weight parameters
+        # Update weight parameters.
         self.optimizer.step()
 
-    def train(self, observation, action, reward, done):
-        # update last product viewed
+    def train(self, observation, action, reward, done = False):
+        # Update last product viewed.
         self.update_lpv(observation)
 
-        # increment step
+        # Increment step.
         self.curr_step += 1
 
-        # update weights of model once mini batch of data accumulated
-        if self.curr_step % self.mini_batch_size == 0:
+        # Update weights of model once mini batch of data accumulated.
+        if self.curr_step % self.config.mini_batch_size == 0:
             self.update_weights()
             self.train_data = []
         else:
             if action is not None and reward is not None:
-                data = (self.last_product_viewed, action, reward)
+                data = (self.last_product_viewed, action['a'], reward)
                 self.train_data.append(data)

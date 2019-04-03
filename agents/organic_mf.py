@@ -1,39 +1,45 @@
-import torch
 from torch import nn, optim, Tensor
 
+from .abstract import Agent
+from reco_gym import Configuration
+
+import numpy as np
+
 # Default Arguments ----------------------------------------------------------
+organic_mf_square_args = {
+    'num_products': 10,
+    'embed_dim': 5,
+    'mini_batch_size': 32,
+    'loss_function': nn.CrossEntropyLoss(),
+    'optim_function': optim.RMSprop,
+    'learning_rate': 0.01,
+}
 
-organic_mf_square_args = {}
-
-organic_mf_square_args['num_products'] = 10
-organic_mf_square_args['embed_dim'] = 5
-
-organic_mf_square_args['mini_batch_size'] = 32
-
-organic_mf_square_args['loss_function'] = nn.CrossEntropyLoss()
-organic_mf_square_args['optim_function'] = optim.RMSprop
-organic_mf_square_args['learning_rate'] = 0.01
 
 # Model ----------------------------------------------------------------------
-class OrganicMFSquare(nn.Module):
-    def __init__(self, args):
-        super().__init__()
+class OrganicMFSquare(nn.Module, Agent):
+    """
+    Organic Matrix Factorisation (Square)
 
-        # set all key word arguments as attributes
-        for key in args:
-            setattr(self, key, args[key])
+    The Agent that selects an Action from the model that performs
+     Organic Events matrix factorisation.
+    """
+
+    def __init__(self, config = Configuration(organic_mf_square_args)):
+        nn.Module.__init__(self)
+        Agent.__init__(self, config)
 
         self.product_embedding = nn.Embedding(
-            self.num_products, self.embed_dim
+            self.config.num_products, self.embed_dim
         )
 
         self.output_layer = nn.Linear(
-            self.embed_dim, self.num_products 
+            self.embed_dim, self.config.num_products
         )
 
-        # initializing optimizer type
+        # Initializing optimizer type.
         self.optimizer = self.optim_function(
-            self.parameters(), lr=self.learning_rate
+            self.parameters(), lr = self.learning_rate
         )
 
         self.last_product_viewed = None
@@ -43,7 +49,7 @@ class OrganicMFSquare(nn.Module):
 
     def forward(self, product):
 
-        product = Tensor([product]).long() 
+        product = Tensor([product]).long()
 
         a = self.product_embedding(product)
         b = self.output_layer(a)
@@ -55,45 +61,54 @@ class OrganicMFSquare(nn.Module):
         if observation is not None:
             logits = self.forward(observation[-1][-1])
 
-            # no exploration strategy, choose maximum logit
+            # No exploration strategy, choose maximum logit.
             self.action = logits.argmax().item()
 
-        return self.action
+        all_ps = np.zeros(self.config.num_products)
+        all_ps[self.action] = 1.0
+        return {
+            **super().act(observation, reward, done),
+            **{
+                'a': self.action,
+                'ps': 1.0,
+                'ps-a': all_ps,
+            }
+        }
 
     def update_weights(self):
-        """update weights of embedding matrices using mini batch of data"""
-        # eliminate previous gradient
+        """Update weights of embedding matrices using mini batch of data"""
+        # Eliminate previous gradient.
         self.optimizer.zero_grad()
 
         for prods in self.train_data:
-            # calculating logit of action and last product viewed
-            
-            # Loop over the number of products
-            for i in range(len(prods)-1):
+            # Calculating logit of action and last product viewed.
+
+            # Loop over the number of products.
+            for i in range(len(prods) - 1):
 
                 logit = self.forward(prods[i][-1])
 
-                # converting label into Tensor
-                label = Tensor([prods[i+1][-1]]).long()
+                # Converting label into Tensor.
+                label = Tensor([prods[i + 1][-1]]).long()
 
-                # calculating supervised loss
-                loss = self.loss_function(logit, label)
+                # Calculating supervised loss.
+                loss = self.config.loss_function(logit, label)
                 loss.backward()
 
-        # update weight parameters
+        # Update weight parameters.
         self.optimizer.step()
 
-    def train(self, observation, action, reward, done):
+    def train(self, observation, action, reward, done = False):
         """Method to deal with the """
 
-        # increment step
+        # Increment step.
         self.curr_step += 1
 
-        # update weights of model once mini batch of data accumulated
-        if self.curr_step % self.mini_batch_size == 0:
+        # Update weights of model once mini batch of data accumulated.
+        if self.curr_step % self.config.mini_batch_size == 0:
             self.update_weights()
             self.train_data = []
         else:
-            if observation is not None:            
-                data = (observation)
+            if observation is not None:
+                data = observation
                 self.train_data.append(data)

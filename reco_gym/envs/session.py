@@ -11,16 +11,26 @@ class Session(list):
             strings.append(','.join(columns))
         return strings
 
+    def get_type(self):
+        raise NotImplemented
 
-class Organic_Session(Session):
 
-    def next(self, product):
-        event = 'pageview'
+class OrganicSessions(Session):
+    def __init__(self):
+        super(OrganicSessions, self).__init__()
 
-        self.append((event, product))
+    def next(self, context, product):
+        self.append(
+            {
+                't': context.time(),
+                'u': context.user(),
+                'z': 'pageview',
+                'v': product
+            }
+        )
 
     def get_type(self):
         return 'organic'
 
     def get_views(self):
-        return [p for e, p in self if e == 'pageview']
+        return [p for _, _, e, p in self if e == 'pageview']

@@ -1,82 +1,110 @@
+import multiprocessing
+import time
+from multiprocessing import Pool
+from copy import deepcopy
+
 from scipy.stats.distributions import beta
 
-
-class LogFile:
-    """simple helper class for logging"""
-    def __init__(self, path):
-
-        if path is not None:
-            self.f = open(path, 'w')
-            self.f.write('user_id|is_online|observation|action|reward\n')
-        else:
-            self.f = None
-
-    def close(self):
-        if self.f is not None:
-            self.f.close()
-
-    def write(self, user_id, is_online, observation, action, reward):
-        if self.f is not None:
-            line = '|'.join([str(user_id), str(is_online), str(observation),
-                             str(action), str(reward)])
-            self.f.write(line + '\n')
+from reco_gym import AgentStats
 
 
-def test_agent(env, agent, num_offline_users=1000, num_online_users=100,num_organic_offline_users=100,
-               num_epochs=1, log_file=None):
+def _collect_stats(args):
+    env = args['env']
+    agent = args['agent']
+    num_offline_users = args['num_offline_users']
+    num_online_users = args['num_online_users']
+    num_organic_offline_users = args['num_organic_offline_users']
+    epoch_with_random_reset = args['epoch_with_random_reset']
+    epoch = args['epoch']
 
-    # open optional logging
-    log = LogFile(log_file)
+    start = time.time()
+    print(f"Start: Agent Training #{epoch}")
 
-    # initialize user id to 1 for logging purposes
-    user_id = 1
+    successes = 0
+    failures = 0
 
-    # Offline organic Training -------------------------------------------------------
-    print("Starting Agent Training")
-    for i in range(num_epochs):
-        env.__init__()  # Reset the env for repeated sequences
-        for u in range(num_organic_offline_users):
-            env.reset()
-            observation, _, _, _ = env.step(None)
-            agent.train(observation, None, None, True)
+    unique_user_id = 0
+    new_agent = deepcopy(agent)
 
+    if epoch_with_random_reset:
+        env = deepcopy(env)
+        env.reset_random_seed(epoch)
 
-    # Offline Training -------------------------------------------------------
-    for i in range(num_epochs):
-        env.__init__()  # Reset the env for repeated sequences
-        for u in range(num_offline_users):
-            env.reset()
-            observation, _, done, _ = env.step(None)
-            while not done:
-                old_observation = observation
-                action, observation, reward, done, info = env.step_offline()
-                agent.train(old_observation, action, reward, done)
-                if i == (num_epochs-1):
-                    log.write(user_id, False, observation, action, reward)
-            if i == (num_epochs-1):
-                user_id += 1
+    # Offline organic Training.
+    for u in range(num_organic_offline_users):
+        env.reset(unique_user_id + u)
+        unique_user_id += 1
+        observation, _, _, _ = env.step(None)
+        new_agent.train(observation, None, None, True)
+    unique_user_id += num_organic_offline_users
 
-    # Online Testing ---------------------------------------------------------
-    suc = 0
-    fail = 0
-    print("Starting Agent Testing")
-    for _ in range(num_online_users):
-        env.reset()
-        observation, _, done, _ = env.step(None)
+    # Offline Training.
+    for u in range(num_offline_users):
+        env.reset(unique_user_id + u)
+        new_observation, _, done, _ = env.step(None)
+        while not done:
+            old_observation = new_observation
+            action, new_observation, reward, done, info = env.step_offline(old_observation, 0, False)
+            new_agent.train(old_observation, action, reward, done)
+    unique_user_id += num_offline_users
+
+    # Online Testing.
+    print(f"Start: Agent Testing #{epoch}")
+    for u in range(num_online_users):
+        env.reset(unique_user_id + u)
+        new_agent.reset()
+        new_observation, _, done, _ = env.step(None)
         reward = None
         done = None
         while not done:
-            action = agent.act(observation, reward, done)
-            observation, reward, done, info = env.step(action)
+            action = new_agent.act(new_observation, reward, done)
+            new_observation, reward, done, info = env.step(action['a'])
 
-            user_id += 1
             if reward:
-                suc = suc + 1
+                successes += 1
             else:
-                fail = fail + 1
+                failures += 1
+    unique_user_id += num_online_users
+    print(f"End: Agent Testing #{epoch} ({time.time() - start}s)")
+
+    return {
+        AgentStats.SUCCESSES: successes,
+        AgentStats.FAILURES: failures,
+    }
+
+
+def test_agent(
+        env,
+        agent,
+        num_offline_users = 1000,
+        num_online_users = 100,
+        num_organic_offline_users = 100,
+        num_epochs = 1,
+        epoch_with_random_reset = False
+):
+    successes = 0
+    failures = 0
+
+    with Pool(processes = multiprocessing.cpu_count()) as pool:
+        argss = [
+            {
+                'env': env,
+                'agent': agent,
+                'num_offline_users': num_offline_users,
+                'num_online_users': num_online_users,
+                'num_organic_offline_users': num_organic_offline_users,
+                'epoch_with_random_reset': epoch_with_random_reset,
+                'epoch': epoch,
+            }
+            for epoch in range(num_epochs)
+        ]
+
+        for result in [_collect_stats(args) for args in argss] if num_epochs == 1 else pool.map(_collect_stats, argss):
+            successes += result[AgentStats.SUCCESSES]
+            failures += result[AgentStats.FAILURES]
 
     return (
-        beta.ppf(0.5, suc+1, fail+1),
-        beta.ppf(0.025, suc+1, fail+1),
-        beta.ppf(0.975, suc+1, fail+1)
-        )
+        beta.ppf(0.500, successes + 1, failures + 1),
+        beta.ppf(0.025, successes + 1, failures + 1),
+        beta.ppf(0.975, successes + 1, failures + 1)
+    )
