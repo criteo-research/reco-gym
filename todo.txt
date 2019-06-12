@@ -4,13 +4,17 @@ We need to complete three notebooks:
 
 Bandit Feedback - evaluate organic model with bandit signal.ipynb
 - Mostly done...  just explanation
+- Reorder plots, start with a random logging policy, simulating an A/B test, doing offline evaluation on those logs, adding IPS,...
+- Include Recall@k as a metric
+
 
 Bandit Feedback - Likelihood based models.ipynb
 - pull in  relevant stuff from Likelihood notebooks
 - Ask Dmytro about numbers of features
-- error bars on click through rates
-- best of organic
-- best of bandit
+- error bars on click through rates (Included)
+- best of organic ( Included as GreedySingleActionAgent)
+- best of bandit ( Included as GreedySingleActionAgent)
+- Include comparison of greedy organic and greedy bandit agents with enough users such that confidence intervals no longer overlap
 - reco with no cross
 - personalised reco with cross
 
