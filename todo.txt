@@ -14,6 +14,17 @@ Bandit Feedback - Likelihood based models.ipynb
 - reco with no cross
 - personalised reco with cross
 
+Specific actions:
+
+1. around cell 31 put error bars on the plot
+2. do a scatter plot with error bars of popularity vs click through rate (non personalised)
+3. do a non-personalised bandit model.  Note that this really should be trained on random policy.
+4. do a non-personalised organic model.  This already exists.. think about the best way to do this one..
+
+
+
+
+
 
 Bandit Feedback - IPS based models.ipynb
 - Nothing done yet.. write from scratch..
