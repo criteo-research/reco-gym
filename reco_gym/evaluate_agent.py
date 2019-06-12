@@ -12,6 +12,11 @@ import reco_gym
 from reco_gym import Configuration, TrainingApproach, EvolutionCase, AgentInit, AgentStats, RoiMetrics
 from agents import EpsilonGreedy, epsilon_greedy_args
 
+from .envs.session import OrganicSessions
+from .envs.context import DefaultContext
+from .envs.observation import Observation
+import pandas as pd
+
 EpsilonDelta = .02
 EpsilonSteps = 6  # Including epsilon = 0.0.
 EpsilonPrecision = 2
@@ -687,3 +692,77 @@ def plot_roi(
     plt.subplots_adjust(hspace = .5)
     plt.show()
     return agent_roi_stats
+
+
+
+def verify_agents(env, number_of_users, agents):
+    stat = {
+        'Agent': [],
+        '0.025': [],
+        '0.500' : [],
+        '0.975': [],
+    }
+
+    for agent_id in agents:
+        stat['Agent'].append(agent_id)
+        data = deepcopy(env).generate_logs(number_of_users, agents[agent_id])
+        bandits = data[data['z'] == 'bandit']
+        successes = bandits[bandits['c'] == 1].shape[0]
+        failures = bandits[bandits['c'] == 0].shape[0]
+        stat['0.025'].append(beta.ppf(0.025, successes + 1, failures + 1))
+        stat['0.500'].append(beta.ppf(0.500, successes + 1, failures + 1))
+        stat['0.975'].append(beta.ppf(0.975, successes + 1, failures + 1))
+        
+    return pd.DataFrame().from_dict(stat)
+
+
+
+
+def evaluate_IPS(agent, reco_log):
+    ee = []
+    for u in range(max(reco_log.u)):
+        t = np.array(reco_log[reco_log['u']==u].t)
+        v = np.array(reco_log[reco_log['u']==u].v)
+        a = np.array(reco_log[reco_log['u']==u].a)
+        c = np.array(reco_log[reco_log['u']==u].c)
+        z = list(reco_log[reco_log['u']==u].z)
+        ps = np.array(reco_log[reco_log['u']==u].ps)
+
+        jj=0
+        
+        session = OrganicSessions()
+        agent.reset()
+        while True:
+            if jj >= len(z):
+                break
+            if z[jj] == 'organic':
+                session.next(DefaultContext(t[jj],u), int(v[jj]))
+            else:
+                prob_policy = agent.act(Observation(DefaultContext(t[jj],u), session), 0, False)['ps-a']
+                ee.append(c[jj] * prob_policy[int(a[jj])] / ps[jj])
+                session = OrganicSessions()
+            jj += 1
+    return ee
+
+
+
+def verify_agents_IPS(reco_log, agents):
+    stat = {
+        'Agent': [],
+        '0.025': [],
+        '0.500' : [],
+        '0.975': [],
+    }
+
+    for agent_id in agents:
+        ee = evaluate_IPS(agents[agent_id], reco_log)
+        mean_ee = np.mean(ee)
+        se_ee = np.std(ee)/np.sqrt(len(ee))
+        stat['Agent'].append(agent_id)
+        stat['0.025'].append(mean_ee - 2*se_ee)
+        stat['0.500'].append(mean_ee)
+        stat['0.975'].append(mean_ee + 2*se_ee)
+    return pd.DataFrame().from_dict(stat)
+
+
+

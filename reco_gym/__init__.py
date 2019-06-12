@@ -20,7 +20,9 @@ from .evaluate_agent import (
     gather_exploration_stats,
     plot_evolution_stats,
     plot_heat_actions,
-    plot_roi
+    plot_roi,
+    verify_agents,
+    verify_agents_IPS
 )
 
 from .envs.features.time.default_time_generator import DefaultTimeGenerator
