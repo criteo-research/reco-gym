@@ -764,5 +764,15 @@ def verify_agents_IPS(reco_log, agents):
         stat['0.975'].append(mean_ee + 2*se_ee)
     return pd.DataFrame().from_dict(stat)
 
-
-
+def plot_verify_agents(result):
+    fig, ax = plt.subplots()
+    ax.set_title('CTR Estimate for Different Agents')
+    plt.errorbar(result['Agent'],
+                 result['0.500'],
+                 yerr = (result['0.500'] - result['0.025'],
+                         result['0.975'] - result['0.500']),
+                 fmt = 'o',
+                 ecolor = 'darkred',
+                 capsize = 4)
+    plt.xticks(result['Agent'], result['Agent'], rotation='vertical')
+    return fig
