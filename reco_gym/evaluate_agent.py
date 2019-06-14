@@ -812,7 +812,6 @@ def verify_agents_recall_at_k(reco_log, agents, k = 5):
 
     for agent_id in agents:
         hits = evaluate_recall_at_k(agents[agent_id], reco_log, k = k)
-        print('{0}\t{1}\t{2}'.format(agent_id, len(hits), sum(hits)))
         mean_hits = np.mean(hits)
         se_hits = np.std(hits)/np.sqrt(len(hits))
         stat['Agent'].append(agent_id)
