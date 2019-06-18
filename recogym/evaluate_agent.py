@@ -10,7 +10,7 @@ from scipy.stats import beta
 import recogym
 
 from recogym import Configuration, TrainingApproach, EvolutionCase, AgentInit, AgentStats, RoiMetrics
-from agents import EpsilonGreedy, epsilon_greedy_args
+from recogym.agents import EpsilonGreedy, epsilon_greedy_args
 
 EpsilonDelta = .02
 EpsilonSteps = 6  # Including epsilon = 0.0.

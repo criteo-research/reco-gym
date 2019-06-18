@@ -2,7 +2,7 @@
 import numpy as np
 from numpy.random.mtrand import RandomState
 
-from agents import Agent
+from recogym.agents import Agent
 from recogym import Configuration
 
 random_args = {

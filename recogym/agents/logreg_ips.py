@@ -3,7 +3,7 @@ import numpy as np
 from numpy.random.mtrand import RandomState
 from sklearn.linear_model import LogisticRegression
 
-from agents import *
+from recogym.agents import *
 from recogym import Configuration
 
 logreg_multiclass_ips_args = {

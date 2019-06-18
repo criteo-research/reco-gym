@@ -2,7 +2,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import PolynomialFeatures
 import numpy as np
 
-from agents import (
+from recogym.agents import (
     ModelBasedAgent,
     AbstractFeatureProvider,
     ViewsFeaturesProvider,

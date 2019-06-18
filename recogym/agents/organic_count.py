@@ -1,6 +1,6 @@
 import numpy as np
 
-from agents import Agent
+from recogym.agents import Agent
 from recogym import Configuration
 
 organic_count_args = {
