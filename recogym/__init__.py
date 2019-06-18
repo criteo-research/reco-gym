@@ -30,10 +30,10 @@ from gym.envs.registration import register
 
 register(
     id = 'reco-gym-v0',
-    entry_point = 'reco_gym.envs:RecoEnv0'
+    entry_point = 'recogym.envs:RecoEnv0'
 )
 
 register(
     id = 'reco-gym-v1',
-    entry_point = 'reco_gym.envs:RecoEnv1'
+    entry_point = 'recogym.envs:RecoEnv1'
 )

@@ -1,9 +1,9 @@
 import gym
 
-from reco_gym import env_0_args, env_1_args, test_agent
+from recogym import env_0_args, env_1_args, test_agent
 from copy import deepcopy
 
-from reco_gym import Configuration
+from recogym import Configuration
 
 from agents import BanditMFSquare, bandit_mf_square_args
 from agents import BanditCount, bandit_count_args

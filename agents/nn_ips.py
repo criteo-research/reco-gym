@@ -6,7 +6,7 @@ from numpy.random.mtrand import RandomState
 from torch import nn
 
 from agents import AbstractFeatureProvider, ViewsFeaturesProvider, Model, ModelBasedAgent
-from reco_gym import Configuration
+from recogym import Configuration
 
 nn_ips_args = {
     'num_products': 10,

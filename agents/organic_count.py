@@ -1,7 +1,7 @@
 import numpy as np
 
 from agents import Agent
-from reco_gym import Configuration
+from recogym import Configuration
 
 organic_count_args = {
     'num_products': 10,

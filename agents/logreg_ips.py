@@ -4,7 +4,7 @@ from numpy.random.mtrand import RandomState
 from sklearn.linear_model import LogisticRegression
 
 from agents import *
-from reco_gym import Configuration
+from recogym import Configuration
 
 logreg_multiclass_ips_args = {
     'num_products': 10,

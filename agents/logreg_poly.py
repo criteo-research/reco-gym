@@ -8,7 +8,7 @@ from agents import (
     ViewsFeaturesProvider,
     Model
 )
-from reco_gym import Configuration
+from recogym import Configuration
 
 logreg_poly_args = {
     'num_products': 10,
