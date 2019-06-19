@@ -2,8 +2,8 @@
 import numpy as np
 from numpy.random.mtrand import RandomState
 
-from agents import Agent
-from reco_gym import Configuration
+from recogym.agents import Agent
+from recogym import Configuration
 
 random_args = {
     'num_products': 10,

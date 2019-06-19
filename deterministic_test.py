@@ -1,18 +1,18 @@
 import gym
 
-from reco_gym import env_0_args, env_1_args, test_agent
+from recogym import env_0_args, env_1_args, test_agent
 from copy import deepcopy
 
-from reco_gym import Configuration
+from recogym import Configuration
 
-from agents import BanditMFSquare, bandit_mf_square_args
-from agents import BanditCount, bandit_count_args
-from agents import RandomAgent, random_args
-from agents import LogregMulticlassIpsAgent, logreg_multiclass_ips_args
-from agents import NnIpsAgent, nn_ips_args
-from agents import OrganicCount, organic_count_args
-from agents import OrganicUserEventCounterAgent, organic_user_count_args
-from agents import LogregPolyAgent, logreg_poly_args
+from recogym.agents import BanditMFSquare, bandit_mf_square_args
+from recogym.agents import BanditCount, bandit_count_args
+from recogym.agents import RandomAgent, random_args
+from recogym.agents import LogregMulticlassIpsAgent, logreg_multiclass_ips_args
+from recogym.agents import NnIpsAgent, nn_ips_args
+from recogym.agents import OrganicCount, organic_count_args
+from recogym.agents import OrganicUserEventCounterAgent, organic_user_count_args
+from recogym.agents import LogregPolyAgent, logreg_poly_args
 
 # Add a new environment here.
 env_test = {

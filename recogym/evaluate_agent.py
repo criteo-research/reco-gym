@@ -7,10 +7,10 @@ import matplotlib.pyplot as plt
 from copy import deepcopy
 from scipy.stats import beta
 
-import reco_gym
+import recogym
 
-from reco_gym import Configuration, TrainingApproach, EvolutionCase, AgentInit, AgentStats, RoiMetrics
-from agents import EpsilonGreedy, epsilon_greedy_args
+from recogym import Configuration, TrainingApproach, EvolutionCase, AgentInit, AgentStats, RoiMetrics
+from recogym.agents import EpsilonGreedy, epsilon_greedy_args
 
 from .envs.session import OrganicSessions
 from .envs.context import DefaultContext
@@ -141,7 +141,7 @@ def _collect_stats(args):
     """
     start = time.time()
     print(f"Start: Num of Offline Users: {args['num_offline_users']}")
-    stats = reco_gym.test_agent(
+    stats = recogym.test_agent(
         deepcopy(args['env']),
         deepcopy(args['agent']),
         args['num_offline_users'],
@@ -283,7 +283,7 @@ def _collect_evolution_stats(args):
     epsilon_key = format_epsilon(epsilon)
     print(f"Start: ε = {epsilon_key}")
     num_evolution_steps = args['num_evolution_steps']
-    rewards = reco_gym.evaluate_agent(
+    rewards = recogym.evaluate_agent(
         deepcopy(args['env']),
         args['agent'],
         args['num_initial_train_users'],

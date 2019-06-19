@@ -2,13 +2,13 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import PolynomialFeatures
 import numpy as np
 
-from agents import (
+from recogym.agents import (
     ModelBasedAgent,
     AbstractFeatureProvider,
     ViewsFeaturesProvider,
     Model
 )
-from reco_gym import Configuration
+from recogym import Configuration
 
 logreg_poly_args = {
     'num_products': 10,
