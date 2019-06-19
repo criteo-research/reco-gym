@@ -1,6 +1,6 @@
 import numpy as np
 
-from reco_gym import Configuration
+from recogym import Configuration
 
 from .abstract import Agent
 

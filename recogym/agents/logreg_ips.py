@@ -3,8 +3,8 @@ import numpy as np
 from numpy.random.mtrand import RandomState
 from sklearn.linear_model import LogisticRegression
 
-from agents import *
-from reco_gym import Configuration
+from recogym.agents import *
+from recogym import Configuration
 
 logreg_multiclass_ips_args = {
     'num_products': 10,

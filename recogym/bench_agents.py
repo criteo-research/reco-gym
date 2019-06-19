@@ -5,7 +5,7 @@ from copy import deepcopy
 
 from scipy.stats.distributions import beta
 
-from reco_gym import AgentStats
+from recogym import AgentStats
 
 
 def _collect_stats(args):
