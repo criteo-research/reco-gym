@@ -745,6 +745,33 @@ def evaluate_IPS(agent, reco_log):
     return ee
 
 
+def evaluate_SNIPS(agent, reco_log):
+    rewards = []
+    p_ratio = []
+    for u in range(max(reco_log.u)):
+        t = np.array(reco_log[reco_log['u']==u].t)
+        v = np.array(reco_log[reco_log['u']==u].v)
+        a = np.array(reco_log[reco_log['u']==u].a)
+        c = np.array(reco_log[reco_log['u']==u].c)
+        z = list(reco_log[reco_log['u']==u].z)
+        ps = np.array(reco_log[reco_log['u']==u].ps)
+
+        jj=0
+        
+        session = OrganicSessions()
+        agent.reset()
+        while True:
+            if jj >= len(z):
+                break
+            if z[jj] == 'organic':
+                session.next(DefaultContext(t[jj],u), int(v[jj]))
+            else:
+                prob_policy = agent.act(Observation(DefaultContext(t[jj],u), session), 0, False)['ps-a']
+                rewards.append(c[jj])
+                p_ratio.append(prob_policy[int(a[jj])] / ps[jj])
+                session = OrganicSessions()
+            jj += 1
+    return rewards, p_ratio
 
 def verify_agents_IPS(reco_log, agents):
     stat = {
@@ -757,6 +784,25 @@ def verify_agents_IPS(reco_log, agents):
     for agent_id in agents:
         ee = evaluate_IPS(agents[agent_id], reco_log)
         mean_ee = np.mean(ee)
+        se_ee = np.std(ee)/np.sqrt(len(ee))
+        stat['Agent'].append(agent_id)
+        stat['0.025'].append(mean_ee - 2*se_ee)
+        stat['0.500'].append(mean_ee)
+        stat['0.975'].append(mean_ee + 2*se_ee)
+    return pd.DataFrame().from_dict(stat)
+
+def verify_agents_SNIPS(reco_log, agents):
+    stat = {
+        'Agent': [],
+        '0.025': [],
+        '0.500' : [],
+        '0.975': [],
+    }
+
+    for agent_id in agents:
+        rewards, p_ratio = evaluate_SNIPS(agents[agent_id], reco_log)
+        ee = np.asarray(rewards) * np.asarray(p_ratio)
+        mean_ee = np.sum(ee) / np.sum(p_ratio)
         se_ee = np.std(ee)/np.sqrt(len(ee))
         stat['Agent'].append(agent_id)
         stat['0.025'].append(mean_ee - 2*se_ee)
@@ -828,7 +874,6 @@ def plot_verify_agents(result):
                  yerr = (result['0.500'] - result['0.025'],
                          result['0.975'] - result['0.500']),
                  fmt = 'o',
-                 ecolor = 'darkred',
                  capsize = 4)
     plt.xticks(result['Agent'], result['Agent'], rotation='vertical')
     return fig
