@@ -12,6 +12,11 @@ import recogym
 from recogym import Configuration, TrainingApproach, EvolutionCase, AgentInit, AgentStats, RoiMetrics
 from recogym.agents import EpsilonGreedy, epsilon_greedy_args
 
+from .envs.session import OrganicSessions
+from .envs.context import DefaultContext
+from .envs.observation import Observation
+import pandas as pd
+
 EpsilonDelta = .02
 EpsilonSteps = 6  # Including epsilon = 0.0.
 EpsilonPrecision = 2
@@ -687,3 +692,188 @@ def plot_roi(
     plt.subplots_adjust(hspace = .5)
     plt.show()
     return agent_roi_stats
+
+
+
+def verify_agents(env, number_of_users, agents):
+    stat = {
+        'Agent': [],
+        '0.025': [],
+        '0.500' : [],
+        '0.975': [],
+    }
+
+    for agent_id in agents:
+        stat['Agent'].append(agent_id)
+        data = deepcopy(env).generate_logs(number_of_users, agents[agent_id])
+        bandits = data[data['z'] == 'bandit']
+        successes = bandits[bandits['c'] == 1].shape[0]
+        failures = bandits[bandits['c'] == 0].shape[0]
+        stat['0.025'].append(beta.ppf(0.025, successes + 1, failures + 1))
+        stat['0.500'].append(beta.ppf(0.500, successes + 1, failures + 1))
+        stat['0.975'].append(beta.ppf(0.975, successes + 1, failures + 1))
+        
+    return pd.DataFrame().from_dict(stat)
+
+
+
+
+def evaluate_IPS(agent, reco_log):
+    ee = []
+    for u in range(max(reco_log.u)):
+        t = np.array(reco_log[reco_log['u']==u].t)
+        v = np.array(reco_log[reco_log['u']==u].v)
+        a = np.array(reco_log[reco_log['u']==u].a)
+        c = np.array(reco_log[reco_log['u']==u].c)
+        z = list(reco_log[reco_log['u']==u].z)
+        ps = np.array(reco_log[reco_log['u']==u].ps)
+
+        jj=0
+        
+        session = OrganicSessions()
+        agent.reset()
+        while True:
+            if jj >= len(z):
+                break
+            if z[jj] == 'organic':
+                session.next(DefaultContext(t[jj],u), int(v[jj]))
+            else:
+                prob_policy = agent.act(Observation(DefaultContext(t[jj],u), session), 0, False)['ps-a']
+                ee.append(c[jj] * prob_policy[int(a[jj])] / ps[jj])
+                session = OrganicSessions()
+            jj += 1
+    return ee
+
+
+def evaluate_SNIPS(agent, reco_log):
+    rewards = []
+    p_ratio = []
+    for u in range(max(reco_log.u)):
+        t = np.array(reco_log[reco_log['u']==u].t)
+        v = np.array(reco_log[reco_log['u']==u].v)
+        a = np.array(reco_log[reco_log['u']==u].a)
+        c = np.array(reco_log[reco_log['u']==u].c)
+        z = list(reco_log[reco_log['u']==u].z)
+        ps = np.array(reco_log[reco_log['u']==u].ps)
+
+        jj=0
+        
+        session = OrganicSessions()
+        agent.reset()
+        while True:
+            if jj >= len(z):
+                break
+            if z[jj] == 'organic':
+                session.next(DefaultContext(t[jj],u), int(v[jj]))
+            else:
+                prob_policy = agent.act(Observation(DefaultContext(t[jj],u), session), 0, False)['ps-a']
+                rewards.append(c[jj])
+                p_ratio.append(prob_policy[int(a[jj])] / ps[jj])
+                session = OrganicSessions()
+            jj += 1
+    return rewards, p_ratio
+
+def verify_agents_IPS(reco_log, agents):
+    stat = {
+        'Agent': [],
+        '0.025': [],
+        '0.500' : [],
+        '0.975': [],
+    }
+
+    for agent_id in agents:
+        ee = evaluate_IPS(agents[agent_id], reco_log)
+        mean_ee = np.mean(ee)
+        se_ee = np.std(ee)/np.sqrt(len(ee))
+        stat['Agent'].append(agent_id)
+        stat['0.025'].append(mean_ee - 2*se_ee)
+        stat['0.500'].append(mean_ee)
+        stat['0.975'].append(mean_ee + 2*se_ee)
+    return pd.DataFrame().from_dict(stat)
+
+def verify_agents_SNIPS(reco_log, agents):
+    stat = {
+        'Agent': [],
+        '0.025': [],
+        '0.500' : [],
+        '0.975': [],
+    }
+
+    for agent_id in agents:
+        rewards, p_ratio = evaluate_SNIPS(agents[agent_id], reco_log)
+        ee = np.asarray(rewards) * np.asarray(p_ratio)
+        mean_ee = np.sum(ee) / np.sum(p_ratio)
+        se_ee = np.std(ee)/np.sqrt(len(ee))
+        stat['Agent'].append(agent_id)
+        stat['0.025'].append(mean_ee - 2*se_ee)
+        stat['0.500'].append(mean_ee)
+        stat['0.975'].append(mean_ee + 2*se_ee)
+    return pd.DataFrame().from_dict(stat)
+
+def evaluate_recall_at_k(agent, reco_log, k = 5):
+    hits = []
+    for u in range(max(reco_log.u)):
+        t = np.array(reco_log[reco_log['u']==u].t)
+        v = np.array(reco_log[reco_log['u']==u].v)
+        a = np.array(reco_log[reco_log['u']==u].a)
+        c = np.array(reco_log[reco_log['u']==u].c)
+        z = list(reco_log[reco_log['u']==u].z)
+        ps = np.array(reco_log[reco_log['u']==u].ps)
+
+        jj=0
+        
+        session = OrganicSessions()
+        agent.reset()
+        while True:
+            if jj >= len(z):
+                break
+            if z[jj] == 'organic':
+                session.next(DefaultContext(t[jj],u), int(v[jj]))
+            else:
+                prob_policy = agent.act(Observation(DefaultContext(t[jj],u), session), 0, False)['ps-a']
+                # Does the next session exist?
+                if (jj + 1) < len(z):
+                    # Is the next session organic?
+                    if z[jj+1] == 'organic':
+                        # Whas there no click for this bandit event?
+                        if not c[jj]:
+                            # Generate a top-K from the probability distribution over all actions
+                            top_k = set(np.argpartition(prob_policy, -k)[-k:])
+                            # Is the next seen item in the top-K?
+                            if v[jj+1] in top_k:
+                                hits.append(1)
+                            else:
+                                hits.append(0)
+                session = OrganicSessions()
+            jj += 1
+    return hits
+
+def verify_agents_recall_at_k(reco_log, agents, k = 5):
+    stat = {
+        'Agent': [],
+        '0.025': [],
+        '0.500' : [],
+        '0.975': [],
+    }
+
+    for agent_id in agents:
+        hits = evaluate_recall_at_k(agents[agent_id], reco_log, k = k)
+        mean_hits = np.mean(hits)
+        se_hits = np.std(hits)/np.sqrt(len(hits))
+        stat['Agent'].append(agent_id)
+        stat['0.025'].append(mean_hits - 2*se_hits)
+        stat['0.500'].append(mean_hits)
+        stat['0.975'].append(mean_hits + 2*se_hits)
+    return pd.DataFrame().from_dict(stat)
+
+def plot_verify_agents(result):
+    fig, ax = plt.subplots()
+    ax.set_title('CTR Estimate for Different Agents')
+    plt.errorbar(result['Agent'],
+                 result['0.500'],
+                 yerr = (result['0.500'] - result['0.025'],
+                         result['0.975'] - result['0.500']),
+                 fmt = 'o',
+                 capsize = 4)
+    plt.xticks(result['Agent'], result['Agent'], rotation='vertical')
+    return fig

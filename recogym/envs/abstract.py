@@ -26,6 +26,7 @@ env_args = {
     'prob_leave_organic': 0.01,
     'prob_bandit_to_organic': 0.05,
     'prob_organic_to_bandit': 0.25,
+    'normalize_beta': False 
 }
 
 

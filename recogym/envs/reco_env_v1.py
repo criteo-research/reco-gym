@@ -8,7 +8,7 @@
 # Beta is the latent representation of response to actions (matrix P by K)
 # sigmoid(beta omega) is the ctr for each action
 
-from numpy import array, diag, exp, matmul, mod
+from numpy import array, diag, exp, matmul, mod, sqrt
 from scipy.special import expit as sigmoid
 from .abstract import AbstractEnv, env_args, organic
 
@@ -24,6 +24,7 @@ env_1_args = {
         'number_of_flips': 0,
         'sigma_mu_organic': 3,
         'change_omega_for_bandits': False,
+        'normalize_beta': False
     }
 }
 
@@ -112,11 +113,18 @@ class RecoEnv1(AbstractEnv):
             )
         )
 
+    def normalize_beta(self):
+        self.beta = self.beta / sqrt((self.beta**2).sum(1)[:,None])
+
     def generate_beta(self, number_of_flips):
         """Create Beta by flipping Gamma, but flips are between similar items only"""
+
         if number_of_flips == 0:
             self.beta = self.Gamma
             self.mu_bandit = self.mu_organic
+            if self.config.normalize_beta:
+                self.normalize_beta()
+
             return
         P, K = self.Gamma.shape
         index = list(range(P))
@@ -143,7 +151,12 @@ class RecoEnv1(AbstractEnv):
                 if flips == number_of_flips:
                     self.beta = self.Gamma[index, :]
                     self.mu_bandit = self.mu_organic[index]
+                    if self.config.normalize_beta:
+                        self.normalize_beta()
                     return
 
         self.beta = self.Gamma[index, :]
         self.mu_bandit = self.mu_organic[index]
+
+        if self.config.normalize_beta:
+            self.normalize_beta()
