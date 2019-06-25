@@ -54,17 +54,6 @@
 
 
 
- \begin{frame}
-  \frametitle{The Reco Problem Revisited}
- 
- 
-   \begin{figure}[h!]
-     \includegraphics[scale=0.3]{images/mot_ex5.png}
-       \centering
-       \label{motex1}
-   \end{figure}
-     
- \end{frame}
 
  \begin{frame}
   
@@ -85,6 +74,7 @@
     \item Netflix Prize: \pause no, explicit feedback of movie ratings \pause
     \item Yoochoose (RecSys 15): \pause no, implicit session based behavior \pause
     \item 30 Music: \pause no, implicit session based behavior \pause
+    \item Yahoo News Feed Dataset \pause yes!
     \item Criteo Dataset for counterfactual evaluation of RecSys algorithms: \pause yes!
   \end{itemize}
 
@@ -98,16 +88,46 @@
   \frametitle{Classic RecSys Evaluation Metrics: Do they evaluate the quality of recommendation?}
 
   \begin{itemize}
-    \item Recall@K, Precision@K, HR@K:  \pause no, evaluates next item prediction \pause
-    \item DCG:   \pause no, evaluates next item prediction \pause
+    \item Recall@K, Precision@K, HR@K:  \pause How often is an item in the top k \pause no, evaluates next item prediction \pause
+    \item DCG:   \pause Are we assigning high score to an item \pause no, evaluates next item prediction \pause
     \item Log likelihood: \pause  unclear, but ususally next item prediction \pause
-    \item Inverse Propensity Score estimate of click through rate: \pause yes! (although it is often noisy) \pause
-    \item AB Test: \pause yes, but the academic literature has no access to this
+    \item Inverse Propensity Score estimate of click through rate: \pause to be explained later. \pause yes! (although it is often noisy) \pause
+    \item AB Test: \pause yes, but the academic literature has no access to this 
   \end{itemize}
 
   \pause
 If the dataset does not contain a log of recommendations and if they were successful, you cannot compute metrics of the recommendation quality.
 \end{frame}
+
+
+  
+\begin{frame}
+  \frametitle{Recommendation as Supervised Learning and AB Testing}
+ 
+ 
+   \begin{figure}[h!]
+     \includegraphics[scale=0.3]{images/recoasabtesting0.png}
+       \centering
+       \label{motex1}
+   \end{figure}
+     
+ \end{frame}
+
+      
+
+
+\begin{frame}
+\frametitle{Recommendation as Supervised Learning and AB Testing}
+
+
+ \begin{figure}[h!]
+   \includegraphics[scale=0.3]{images/recoasabtesting.png}
+     \centering
+     \label{motex1}
+ \end{figure}
+   
+\end{frame}
+
 
 
 \begin{frame}
@@ -127,22 +147,6 @@ If the dataset does not contain a log of recommendations and if they were succes
   \end{frame}
   
 
-
-
-  
-  
-  
-  \begin{frame}
-    \frametitle{Supervised learning with the wrong objective}
-  
-  Most of the time, we frame the problem either as:
-  \begin{itemize}
-  \item Missing link prediction
-  \item Next user event prediction
-  \end{itemize}
-  
-  \end{frame}
-  
   
   \begin{frame}
     \frametitle{Supervised learning with the wrong objective}
@@ -157,12 +161,7 @@ If the dataset does not contain a log of recommendations and if they were succes
   
   From the point of view of business metrics, \textbf{learning to autocomplete behavior is a great initial recommendation policy}, especially when no prior user feedback is available. 
   
-  \end{frame}
-  
-  
-  \begin{frame}
-    \frametitle{Supervised learning with the wrong objective}
-  
+  \pause
   \textbf{However}, after a first golden age, where all offline improvements turn into positive A/B tests, the \emph{naive recommendation} optimization objective and the business objective will start to diverge.
   
   \end{frame}
@@ -179,41 +178,6 @@ If the dataset does not contain a log of recommendations and if they were succes
   \end{frame}
   
   
-  \begin{frame}
-    \frametitle{Aligning the Recommendation objective with the business}
-  
-    However, this does not come without caveats...
-  
-  \end{frame}
-  
-  
-  \begin{frame}
-    \frametitle{Recommendation as Supervised Learning and AB Testing}
-   
-   
-     \begin{figure}[h!]
-       \includegraphics[scale=0.3]{images/recoasabtesting0.png}
-         \centering
-         \label{motex1}
-     \end{figure}
-       
-   \end{frame}
-  
-        
-
-
- \begin{frame}
-  \frametitle{Recommendation as Supervised Learning and AB Testing}
- 
- 
-   \begin{figure}[h!]
-     \includegraphics[scale=0.3]{images/recoasabtesting.png}
-       \centering
-       \label{motex1}
-   \end{figure}
-     
- \end{frame}
-
 
 
 
@@ -422,12 +386,6 @@ Where does traditional academic recommender systems research fit into this pictu
 \end{frame}
 
 
-\begin{frame}
-\begin{quote}
-  To consult the statistician after an experiment is finished is often merely to ask him to conduct a post mortem examination. He can perhaps say what the experiment died of.
-\end{quote}
-Roland Fisher
-\end{frame}
 
 \begin{frame}[fragile]
   \frametitle{Answer Q1 Histogram of product popularity}
@@ -563,7 +521,7 @@ A bandit best-of agent always recommends the highest ctr product (product 5).  A
 \frametitle{Organic Best-Of vs Bandit Best-Of}
   
 \begin{figure}[h!]
-\includegraphics[scale=0.4]{images/organic_bestof4.png}
+\includegraphics[scale=0.4]{images/bestof.png}
 \centering
 \label{motex1}
 \end{figure}
@@ -734,7 +692,7 @@ The central idea of an inverse propensity score is that we evaluate a new policy
 \end{frame}
 
 
-\plain{LIkelihood Based Agents}
+\plain{Likelihood Based Agents}
 
 \begin{frame}
   \frametitle{Likelihood Based Agent}
@@ -813,6 +771,24 @@ How would you interact the features?
 
 \pause
 Is this a good feature engineering scheme?  Can you improve it?
+\end{frame}
+
+
+
+
+\begin{frame}
+  \frametitle{Pure Bandit Feedback}
+
+    \begin{itemize}
+      \item You need to build a recommender system for a client, they have an existing system with existing organic traffic.  \pause This means you can build standard next item predictions to build models of user behavior and understand how user's preferences cluster together. \pause
+      \item They are currently running a recommender system with a random policy. \pause
+      \item Your task is to build a next item prediction model as a proxy for a recommendation algorithm.  Then produce offline metrics to convince the engineering team to run an AB test.\pause
+      \item Finally you evaluate your performance against production.
+    \end{itemize}
+
+    \pause
+    Please look at notebook ``Module III C.ipynb''
+
 \end{frame}
 
 
