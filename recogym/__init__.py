@@ -22,7 +22,8 @@ from .evaluate_agent import (
     plot_heat_actions,
     plot_roi,
     verify_agents,
-    verify_agents_IPS
+    verify_agents_IPS,
+    to_categorical
 )
 
 from .envs.features.time.default_time_generator import DefaultTimeGenerator
