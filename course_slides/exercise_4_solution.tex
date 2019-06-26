@@ -1,0 +1,58 @@
+\begin{frame}[fragile]
+  \frametitle{A possible solution for Exercise D}
+\begin{tiny}
+\begin{verbatim}
+    def train(self, reco_log, U, P):
+        # Generate item embeddings by SVD on item co-count matrix
+        self.embeddings = create_embeddings(reco_log, U, P, self.K)
+        # Generate feature-matrix X to train on
+        X = []
+        y = []
+        uid = 0
+        uemb = np.zeros(self.K)
+        ucnt = 0
+        for row in reco_log.itertuples():
+            # Do we have a new user?
+            if row.u != uid:
+                # Reset the embedding
+                uid = row.u
+                uemb = np.zeros(self.K)
+                ucnt = 0
+            # Is this an organic event?
+            if row.z == 'organic':
+                # Update the user embedding
+                uemb += self.embeddings[int(row.v),:]
+                ucnt += 1
+            elif row.z == 'bandit':
+                # One-hot encode the item in the last P columns
+                aemb = np.zeros(P)
+                aemb[int(row.a)] = 1.
+                features = np.kron(uemb/ucnt, aemb)
+                X.append(features)
+                y.append(row.c)
+        X = np.asarray(X)
+        y = np.asarray(y)
+        # Train Logistic Regression model
+        self.model = LogisticRegression().fit(X,y)
+\end{verbatim}
+\end{tiny}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{A possible solution for Exercise D}
+In the 'act' method:
+\begin{tiny}
+\begin{verbatim}
+# Generate a prediction for every possible action
+X = []
+for a in range(self.embeddings.shape[0]):
+    # One-hot encode the item in the last P columns
+    aemb = np.zeros(self.embeddings.shape[0])
+    dot = np.matmul(self.embeddings[int(a),:],(self.user_embedding/self.history_length))
+    features = np.kron((self.user_embedding/self.history_length), aemb)
+    X.append(features)
+prob = self.model.predict_log_proba(np.asarray(X))[:,1]
+prob = np.exp(prob-logsumexp(prob))
+\end{verbatim}
+\end{tiny}
+\end{frame}
