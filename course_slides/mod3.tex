@@ -1027,15 +1027,17 @@ Is this a good feature engineering scheme?  Can you improve it?
   \frametitle{Pure Bandit Feedback}
 
     \begin{itemize}
-      \item You need to build a recommender system for a client, they have an existing system with existing organic traffic.  \pause This means you can build standard next item predictions to build models of user behavior and understand how user's preferences cluster together. \pause
-      \item They are currently running a recommender system with a random policy. \pause
-      \item Your task is to build a next item prediction model as a proxy for a recommendation algorithm.  Then produce offline metrics to convince the engineering team to run an AB test.\pause
+      \item Build a model using feature engineering using logistic regression (or a deep model) \pause
       \item Finally you evaluate your performance against production.
     \end{itemize}
 
     \pause
     Please look at notebook ``Module III C.ipynb''
     \href{https://colab.research.google.com/github/criteo-research/reco-gym/blob/DS3/Module\%20III\%20C.ipynb}{Click here}
+
+
+    \pause
+    What is lacking in this approach?
 
 \end{frame}
 
