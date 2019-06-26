@@ -1,27 +1,249 @@
 % Slide1: Introduction -----------------------------------------------------------
 
+% FIXME R vs A -  I guess change to A (A is used for implicit
+% assumption slides.. so fix this!)
+
+\begin{frame}[fragile]
+  \frametitle{Notation}
+
+\begin{table}
+  \begin{tabular}{c l r}
+    \toprule
+    \textbf{Symbol} & \textbf{Dimension} & \textbf{Description} \\ 
+    \midrule
+    \midrule
+    $u$ & Scalar & A given users id.  \\
+    $t$ & Scalar & sequential time. \\%, an integer indicating item occurrence.\\
+    $P$ & Scalar & Total number of products. \\
+    $v_{t}$ & Scalar & Product id viewed by user at time $t$.\\
+    $r_{t}$ & Scalar & Product id recommended at time $t$.\\
+    $c_{t}$ & Scalar & Product id recommended at time $t$.  \\  
+    \bottomrule    
+    \end{tabular}
+    \caption{Notations and Definitions} 
+    \vskip -15pt
+    \label{tab:notation}
+  \end{table}
+\end{frame}
+
 
 
 \begin{frame}
-  \frametitle{The Reco Problem Revisited}
+  \frametitle{Classic Reco}
  
  
    \begin{figure}[h!]
-     \includegraphics[scale=0.3]{images/mot_ex1.png}
+     \includegraphics[scale=0.25]{images/mot_ex1a.png}
        \centering
        \label{motex1}
    \end{figure}
      
+ \end{frame}
+
+
+\begin{frame}
+  \frametitle{Classic Reco}
+ 
+ 
+   \begin{figure}[h!]
+     \includegraphics[scale=0.25]{images/mot_ex1b.png}
+       \centering
+       \label{motex1}
+   \end{figure}
+     
+ \end{frame}
+
+
+\begin{frame}
+  \frametitle{Classic Reco}
+ 
+ 
+   \begin{figure}[h!]
+     \includegraphics[scale=0.25]{images/mot_ex1cc.png}
+       \centering
+       \label{motex1}
+   \end{figure}
+     
+ \end{frame}
+
+
+
+
+ \begin{frame}
+  \frametitle{Classic Reco}
+ 
+ 
+   \begin{figure}[h!]
+     \includegraphics[scale=0.25]{images/mot_ex1a.png}
+       \centering
+       \label{motex1}
+   \end{figure}
+
+   \[
+   P(V_1 = {\rm beer})  
+   \]
+ \end{frame}
+
+
+\begin{frame}
+  \frametitle{Classic Reco}
+ 
+ 
+   \begin{figure}[h!]
+     \includegraphics[scale=0.25]{images/mot_ex1b.png}
+       \centering
+       \label{motex1}
+   \end{figure}
+   \[
+   P(V_2 = {\rm phone ~ A} | V_1 = {\rm beer})  
+   \]
+     
+ \end{frame}
+
+
+\begin{frame}
+  \frametitle{Classic Reco}
+ 
+ 
+   \begin{figure}[h!]
+     \includegraphics[scale=0.25]{images/mot_ex1cc.png}
+       \centering
+       \label{motex1}
+   \end{figure}
+
+   \[
+   P(V_3 = {\rm phone ~ B} | V_1 = {\rm beer}, V_2 = {\rm phone ~ A} )  
+   \]
+
+   
  \end{frame}
 
 
 
  \begin{frame}
-  \frametitle{The Reco Problem Revisited}
+  \frametitle{Next Item Prediction, hold out $V_3$}
+
+  \begin{tabular}{r r}
+    $P(V_3 = {\rm phone ~ A} | V_1 = {\rm beer}, V_2 = {\rm phone ~ A} )$ &= $0.27$ \\
+    $P(V_3 = {\rm phone ~ B} | V_1 = {\rm beer}, V_2 = {\rm phone ~ A} )$ &= $0.24$ \\
+    $P(V_3 = {\rm rice} | V_1 = {\rm beer}, V_2 = {\rm phone ~ A} )$ &= $0.10$ \\
+    $P(V_3 = {\rm couscous} | V_1 = {\rm beer}, V_2 = {\rm phone ~ A} )$ &= $0.09$ \\
+    $P(V_3 = {\rm beer} | V_1 = {\rm beer}, V_2 = {\rm phone ~ A} )$ &= $0.30$ \\
+  \end{tabular}
+
+
+\vspace{4mm}  
+  \pause
+What actually happened? \pause $V_3 = {\rm phone ~ B} $
+
+\vspace{4mm}  
+  \pause
+Our model assigned: $P(V_3 = {\rm phone ~ B} | V_1 = {\rm beer}, V_2 = {\rm phone ~ A}) = 0.24$ 
+
+\pause
+Of course better would be higher, but how good is this?
+
+ \end{frame}
+
+
+
+ \begin{frame}
+  \frametitle{Next Item Prediction, hold out $V_3$: Log likelihood}
+
+What actually happened? \pause $V_3 = {\rm phone ~ B} $
+
+\vspace{4mm}  
+  \pause
+Our model assigned: $P(V_3 = {\rm phone ~ B} | V_1 = {\rm beer}, V_2 = {\rm phone ~ A}) = 0.24$ 
+
+\vspace{4mm}  
+
+\pause
+Log Likelihood:
+$\log P(V_3 = {\rm phone ~ B} | V_1 = {\rm beer}, V_2 = {\rm phone ~ A}) = -1.427116$ 
+
+\vspace{4mm}  
+
+\pause
+Rationale:  you want to assign high values to things that happend.
+
+ \end{frame}
+
+
+
+
+ \begin{frame}
+  \frametitle{Next Item Prediction, hold out $V_3$: HR@K Recall@K
+    Precision@K - K=2}
+
+  \begin{tabular}{r r}
+    $P(V_3 = {\rm phone ~ A} | V_1 = {\rm beer}, V_2 = {\rm phone ~ A} )$ &= $0.27$ \\
+    $P(V_3 = {\rm phone ~ B} | V_1 = {\rm beer}, V_2 = {\rm phone ~ A} )$ &= $0.24$ \\
+    $P(V_3 = {\rm rice} | V_1 = {\rm beer}, V_2 = {\rm phone ~ A} )$ &= $0.10$ \\
+    $P(V_3 = {\rm couscous} | V_1 = {\rm beer}, V_2 = {\rm phone ~ A} )$ &= $0.09$ \\
+    $P(V_3 = {\rm beer} | V_1 = {\rm beer}, V_2 = {\rm phone ~ A} )$ &= $0.30$ \\
+  \end{tabular}
+
+  What actually happened? \pause $V_3 = {\rm phone ~ B} $
+
+
+  \vspace{4mm}  
+  \pause
+Our model assigned: $P(V_3 = {\rm phone ~ B} | V_1 = {\rm beer}, V_2 = {\rm phone ~ A}) = 0.24$, which is 3rd place
+
+How good is 3rd place?
+\pause
+HR@K if K=2, our model assigned phone B the third highest spot so it just misses out.
+
+\vspace{4mm}  
+
+
+ \end{frame}
+
+
+ \begin{frame}
+  \frametitle{Next Item Prediction, hold out $V_3$: HR@K Recall@K
+    Precision@K - K=3}
+
+  \begin{tabular}{r r}
+    $P(V_3 = {\rm phone ~ A} | V_1 = {\rm beer}, V_2 = {\rm phone ~ A} )$ &= $0.27$ \\
+    $P(V_3 = {\rm phone ~ B} | V_1 = {\rm beer}, V_2 = {\rm phone ~ A} )$ &= $0.24$ \\
+    $P(V_3 = {\rm rice} | V_1 = {\rm beer}, V_2 = {\rm phone ~ A} )$ &= $0.10$ \\
+    $P(V_3 = {\rm couscous} | V_1 = {\rm beer}, V_2 = {\rm phone ~ A} )$ &= $0.09$ \\
+    $P(V_3 = {\rm beer} | V_1 = {\rm beer}, V_2 = {\rm phone ~ A} )$ &= $0.30$ \\
+  \end{tabular}
+
+  What actually happened? \pause $V_3 = {\rm phone ~ B} $
+
+
+  \vspace{4mm}  
+  \pause
+Our model assigned: $P(V_3 = {\rm phone ~ B} | V_1 = {\rm beer}, V_2 = {\rm phone ~ A}) = 0.24$, which is 3rd place
+
+How good is 3rd place?
+\pause
+HR@K if K=3, our model assigned phone B the third highest spot so it
+is in.
+
+\vspace{4mm}  
+
+\pause
+Rationale:  you want a ranking that assigns high positions to events that occur.  The position matters more than the probability.
+
+ \end{frame}
+
+
+
+
+
+
+
+ \begin{frame}
+  \frametitle{Real Reco}
  
  
    \begin{figure}[h!]
-     \includegraphics[scale=0.3]{images/mot_ex2.png}
+     \includegraphics[scale=0.25]{images/mot_ex2.png}
        \centering
        \label{motex1}
    \end{figure}
@@ -29,11 +251,11 @@
  \end{frame}
 
  \begin{frame}
-  \frametitle{The Reco Problem Revisited}
+  \frametitle{Real Reco}
  
  
    \begin{figure}[h!]
-     \includegraphics[scale=0.3]{images/mot_ex3.png}
+     \includegraphics[scale=0.25]{images/mot_ex3.png}
        \centering
        \label{motex1}
    \end{figure}
@@ -41,11 +263,11 @@
  \end{frame}
 
  \begin{frame}
-  \frametitle{The Reco Problem Revisited}
+  \frametitle{Real Reco}
  
  
    \begin{figure}[h!]
-     \includegraphics[scale=0.3]{images/mot_ex4.png}
+     \includegraphics[scale=0.25]{images/mot_ex4.png}
        \centering
        \label{motex1}
    \end{figure}
@@ -54,6 +276,160 @@
 
 
 
+ %%
+
+
+
+ \begin{frame}
+  \frametitle{The Real Reco Problem}
+ 
+ 
+   \begin{figure}[h!]
+     \includegraphics[scale=0.25]{images/mot_ex3.png}
+       \centering
+       \label{motex1}
+   \end{figure}
+
+   \[
+   P(C_4=1|A_4={\rm couscous} , V_1 = {\rm beer}, V_2 = {\rm phone ~ A}, V_3 = {\rm phone ~ B}) 
+   \]
+
+   
+ \end{frame}
+
+
+ \begin{frame}
+  \frametitle{The Real Reco Problem}
+ 
+ 
+   \begin{figure}[h!]
+     \includegraphics[scale=0.25]{images/mot_ex2.png}
+       \centering
+       \label{motex1}
+   \end{figure}
+
+   \[
+   P(C_4=1|A_4={\rm phone ~ B} , V_1 = {\rm beer}, V_2 = {\rm phone ~ A}, V_3 = {\rm phone ~ B}) 
+   \]
+
+ \end{frame}
+
+
+ \begin{frame}
+  \frametitle{The Real Reco Problem}
+ 
+ 
+   \begin{figure}[h!]
+     \includegraphics[scale=0.25]{images/mot_ex4.png}
+       \centering
+       \label{motex1}
+   \end{figure}
+
+   \[
+   P(C_4=1|A_4={\rm rice},  V_1 = {\rm beer}, V_2 = {\rm phone ~ A}, V_3 = {\rm phone ~ B}) 
+   \]
+   
+
+ \end{frame}
+
+
+ \begin{frame}
+  \frametitle{What we have, and what we want:}
+
+Our model:
+  \begin{tabular}{r l}
+    $P(V_4={\rm phone ~ A} |V_1 = {\rm beer}, V_2 = {\rm phone ~ A}, V_3 = {\rm phone ~ A} )$ &= $0.27$ \\
+    $P(V_4={\rm phone ~ B} |V_1 = {\rm beer}, V_2 = {\rm phone ~ A}, V_3 = {\rm phone ~ A} )$ &= $0.28$ \\
+    $P(V_4={\rm rice} |V_1 = {\rm beer}, V_2 = {\rm phone ~ A}, V_3 = {\rm phone ~ A} )$ &= $.12$ \\
+    $P(V_4={\rm couscous} |V_1 = {\rm beer}, V_2 = {\rm phone ~ A}, V_3 = {\rm phone ~ A} )$ &= $.14$ \\
+    $P(V_4={\rm beer} |V_1 = {\rm beer}, V_2 = {\rm phone ~ A}, V_3 = {\rm phone ~ A} )$ &= $0.19$ \\
+  \end{tabular}
+
+\vspace{1mm}
+
+
+\pause
+Which is a vector of size $P$ that sums to 1.
+
+\vspace{2mm}
+
+We want: \pause
+
+\vspace{1mm}
+
+
+  \begin{tabular}{r r}
+    $P(C_4=1| A_4={\rm phone ~ A}, V_1 = {\rm beer}, V_2 = {\rm phone ~ A}, V_3 = {\rm phone ~ A} )$ &= $?$ \\
+    $P(C_4=1| A_4={\rm phone ~ B}, V_1 = {\rm beer}, V_2 = {\rm phone ~ A}, V_3 = {\rm phone ~ A} )$ &= $?$ \\
+    $P(C_4=1| A_4={\rm rice}, V_1 = {\rm beer}, V_2 = {\rm phone ~ A}, V_3 = {\rm phone ~ A} )$ &= $?$ \\
+    $P(C_4=1| A_4={\rm couscous}, V_1 = {\rm beer}, V_2 = {\rm phone ~ A}, V_3 = {\rm phone ~ A} )$ &= $?$ \\
+    $P(C_4=1| A_4={\rm beer}, V_1 = {\rm beer}, V_2 = {\rm phone ~ A}, V_3 = {\rm phone ~ A} )$ &= $?$ \\
+  \end{tabular}
+
+\pause
+Which is a vector of size $P$ where each entry is between $0$ and $1$.    
+
+ \end{frame}
+
+
+ \begin{frame}
+  \frametitle{An implicit assumption:}
+
+Our model predicts:
+  \begin{tabular}{r l}
+    $P(V_4={\rm phone ~ A} |V_1 = {\rm beer}, V_2 = {\rm phone ~ A}, V_3 = {\rm phone ~ A} )$ &= $0.27$ \\
+    $P(V_4={\rm phone ~ B} |V_1 = {\rm beer}, V_2 = {\rm phone ~ A}, V_3 = {\rm phone ~ A} )$ &= $0.28$ \\
+    $P(V_4={\rm rice} |V_1 = {\rm beer}, V_2 = {\rm phone ~ A}, V_3 = {\rm phone ~ A} )$ &= $.12$ \\
+    $P(V_4={\rm couscous} |V_1 = {\rm beer}, V_2 = {\rm phone ~ A}, V_3 = {\rm phone ~ A} )$ &= $.14$ \\
+    $P(V_4={\rm beer} |V_1 = {\rm beer}, V_2 = {\rm phone ~ A}, V_3 = {\rm phone ~ A} )$ &= $0.19$ \\
+  \end{tabular}
+
+So let's recommend phone B, it has the highest next item probability.
+
+\end{frame}
+
+ \begin{frame}
+  \frametitle{An implicit assumption:}
+If: \pause
+
+\[
+P(V_n=a|V_1=v_1..V_{n-1}=v_{n-1}) > P(V_n=b|V_1=v_1..V_{n-1}=v_{n-1})
+\]    
+
+\pause
+Assume:
+
+\begin{align*}
+P(C_n=1|&A_n=a,V_1=v_1..V_{n-1}=v_{n-1}) \\
+&> P(C_n=1|A_n=b,V_1=v_1..V_{n-1}=v_{n-1})
+\end{align*}
+
+\pause
+Vast amounts of academic Reco work assumes this implicitly!
+
+ \end{frame}
+
+
+ \begin{frame}
+  \frametitle{The assumption is testable}
+
+Our model predicts:
+  \begin{tabular}{r l}
+    $P(V_4={\rm phone ~ A} |V_1 = {\rm beer}, V_2 = {\rm phone ~ A}, V_3 = {\rm phone ~ A} )$ &= $0.27$ \\
+    $P(V_4={\rm phone ~ B} |V_1 = {\rm beer}, V_2 = {\rm phone ~ A}, V_3 = {\rm phone ~ A} )$ &= $0.28$ \\
+    $P(V_4={\rm rice} |V_1 = {\rm beer}, V_2 = {\rm phone ~ A}, V_3 = {\rm phone ~ A} )$ &= $.12$ \\
+    $P(V_4={\rm couscous} |V_1 = {\rm beer}, V_2 = {\rm phone ~ A}, V_3 = {\rm phone ~ A} )$ &= $.14$ \\
+    $P(V_4={\rm beer} |V_1 = {\rm beer}, V_2 = {\rm phone ~ A}, V_3 = {\rm phone ~ A} )$ &= $0.19$ \\
+  \end{tabular}
+
+So let's recommend phone B, it has the highest next item
+probability. \pause - but we will also sometimes choose other actions
+with a small probability, so we can check if these items have lower
+click through rates.
+
+
+
+\end{frame}
 
  \begin{frame}
   
@@ -62,7 +438,8 @@
        \centering
        \label{motex1}
    \end{figure}
-     
+   
+
  \end{frame}
 
 
@@ -92,13 +469,100 @@
     \item DCG:   \pause Are we assigning high score to an item \pause no, evaluates next item prediction \pause
     \item Log likelihood: \pause  unclear, but ususally next item prediction \pause
     \item Inverse Propensity Score estimate of click through rate: \pause to be explained later. \pause yes! (although it is often noisy) \pause
-    \item AB Test: \pause yes, but the academic literature has no access to this 
+    \item AB Test: \pause i.e. run a randomized control trial live\pause yes, but the academic literature has no access to this 
   \end{itemize}
 
   \pause
 If the dataset does not contain a log of recommendations and if they were successful, you cannot compute metrics of the recommendation quality.
 \end{frame}
 
+
+\begin{frame}
+  \frametitle{Offline evaluation that predicts an AB test result}
+
+Imagine we have a new recommendation stratergy $\pi_t(A_{n}=a_n|V_1=v_1,...,V_n=v_{n-1})$, can we
+predict how well it will perform if we deploy it?  We collect logs
+from a different policy: $\pi_0(A_{n}=a_n|V_1=v_1,...,V_n=v_{n-1})$
+
+\pause
+
+Let's examine some hypothetical logs... 
+
+ \end{frame}
+
+
+
+\begin{frame}
+  \frametitle{Offline evaluation IPS}
+ 
+ 
+   \begin{figure}[h!]
+     \includegraphics[scale=0.15]{images/mot_ex2.png}
+       \centering
+       \label{motex1}
+   \end{figure}
+
+Imagine the user clicks
+\begin{align*}
+     \pi_t(A_{4}= {\rm phone ~ B} {\rm }|V_1={\rm beer}, V_2={\rm phone ~ A}, V_3={\rm phone ~ B}) &= 1\\
+     \pi_0(A_{4}= {\rm phone ~ B} {\rm }|V_1={\rm beer}, V_2={\rm phone ~ A}, V_3={\rm phone ~ B}) &= 0.8\\
+\end{align*}
+
+The new policy will recommend ``phone B'' the $\frac{1}{0.8}=1.25 \times$ as often as the old policy.
+   
+ \end{frame}
+
+
+
+
+\begin{frame}
+  \frametitle{Offline evaluation IPS}
+ 
+
+
+Imagine the user clicks
+\begin{align*}
+     \pi_t(A_{2}= {\rm rice} {\rm }|V_1={\rm couscous}) &= 1\\
+     \pi_0(A_{2}= {\rm rice} {\rm }|V_1={\rm couscous}) &= 0.01\\
+\end{align*}
+
+The new policy will recommend ``rice'' the $\frac{1}{0.01}=100 \times$ as often as the old policy.
+   
+ \end{frame}
+
+
+\begin{frame}
+  \frametitle{Offline evaluation IPS}
+ 
+\[
+{\rm CTR ~ estimate} = \frac{1}{N} \sum_n^N \frac{c_n \pi_t(A_n=a_n|V_1=v_1..V_n=v_n)}{\pi_0(A_n=a_n|V_1=v_1..V_n=v_n)}
+\]
+
+\pause
+We only look at the clicks i.e. $c_n=1$ (otherwise the contribution is $0$).
+
+\pause
+
+When the new policy differs markedly from the old, the weights become
+very high (to compensate for the fact that these are rare examples in
+your sample).  These rare high values contribute a lot to the variance
+of the estimator.
+
+
+\pause
+IPS actually atempts to predict the AB test, but it often has less
+than spectacular results...   
+
+ \end{frame}
+
+\begin{frame}
+  \frametitle{Real world Reco}
+
+Real world reco is an anonymous hybrid of different methodologies.
+Often poor agreement between online and offline metrics are
+reported..  \pause why? \pause What does real world reco look like?
+
+\end{frame}
 
   
 \begin{frame}
@@ -790,126 +1254,6 @@ Is this a good feature engineering scheme?  Can you improve it?
     Please look at notebook ``Module III C.ipynb''
 
 \end{frame}
-
-
-\begin{frame}
-  \frametitle{Other ways to train on bandit feedback - reweighted likelihood}
-
-  What if we fit an overly simplified parametric model to the data?
-  \pause
-
-  The simple model will predict accurately for the most frequent actions and compromise the fit for the least frequent actions.
-
-
-\begin{align*}
-	\hat{\bbeta}_{\operatorname{re-weight}} =  {\rm argmax}_{\bbeta}
-	\sum_n
-	& w_n c_n \log \sigma
-		\left(
-			{\bPhi
-				\left(
-					\left[ {\bX}_n ~ {\ba}_n \right]
-				\right)
-			}^T \bbeta
-		\right)  \\
-	& + w_n \left( 1-c_n \right)
-		\log
-			\left(
-				1 - \sigma
-					\left(
-						{\bPhi \left(
-								\left[ {\bX}_n ~ {\ba}_n \right]
-							\right)
-						}^T \bbeta
-					\right)
-			\right)
-\end{align*}
-
-where the weight is defined: $w_n = \frac{1}{\pi\left( {\ba}_n | {\bX}_n \right)}$.
-
-\end{frame}
-
-
-\begin{frame}
-  \frametitle{Pure Organic vs Pure Bandit}
-\begin{figure}[h!]
-\includegraphics[scale=0.34]{images/two_linear_models_and_gp5.png}
-\centering
-\end{figure}
-\end{frame}
-
-
-\begin{frame}
-  \frametitle{Other ways to train on bandit feedback - counterfactual risk}
-
-  Often in machine learning we search for a decision rule that would have worked well in the past.  \pause We call this empirical risk.
-
-  \pause
-
-  We can't evaluate decisions we didn't do in the past.  \pause We can however use IPS to estimate them.
-
-  \pause
-
-  A direct estimation of this leads to the contextual bandit formulation:
-
-  \pause
-
-
-  \[
-    \pi_{\bbeta}\left( {\ba}_n | {\bX}_n \right) = {\rm softmax}
-      \left( {\bPhi
-        \left(
-          \left[ \bX_n ~ \ba_n \right]
-        \right)}^T \bbeta
-      \right)
-  \]  
-
-\end{frame}
-
-
-\begin{frame}
-  \frametitle{Other ways to train on bandit feedback - counterfactual risk}
-
-\begin{align*}
-	\hat{\bbeta}_{\rm CB} = {\rm argmax}_{\bbeta} \sum_n
-	& w_n c_n
-		{\left(
-			{\bX}_n \otimes {\ba}_n
-		\right)}^T ~ \bbeta \\
-	& - w_n c_n \log \sum_{{\ba}_{n}^{'}} e^{
-						{\left(
-							{\bX}_n \otimes {\ba}_{n}^{'}
-						\right)}^T \bbeta
-						} \\
-\end{align*}
-
-\end{frame}
-
-
-
-\begin{frame}
-  \frametitle{Three methods}
-\begin{figure}[h!]
-\includegraphics[scale=0.45]{images/pop_sampling_run.png}
-\centering
-\end{figure}
-
-
-\end{frame}
-
-
-
-\begin{frame}
-  \frametitle{Three methods}
-\begin{figure}[h!]
-\includegraphics[scale=0.45]{images/inv_pop_sampling_run.png}
-\centering
-\end{figure}
-
-Much more in the next moudule.  For a short summary see our paper: ``Three methods for training on Bandit feedback''
-
-\end{frame}
-
 
 
 
