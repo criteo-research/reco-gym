@@ -181,3 +181,119 @@ def act(self, observation, reward, done):
 \end{tiny}
 \end{frame}
 
+\plain{Answers Evaluate on Bandit}
+
+
+
+
+
+
+
+\begin{frame}
+  \frametitle{Evaluate an organic model using Bandit Feedback}
+
+  Methods like word2vec and SVD can be used to produce a low rank factorization of a matrix of co-counts.  Imagine we have 500 products and we have observed the co-counts on the right, the matrix on the left can produce a good reconstruction (perhaps better than the original as it can fill in missing signal).  It also uses less parameters, which has both computational and statistical advantages.
+
+  You could also use deep learning (see modules 1 and 2 of our course)
+
+  \begin{figure}[h!]
+\includegraphics[scale=0.4]{images/evalorganicwithbandit0.png}
+\centering
+\label{motex1}
+\end{figure}
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Evaluate an organic model using Bandit Feedback}
+\begin{figure}[h!]
+\includegraphics[scale=0.4]{images/evalorganicwithbandit1.png}
+\centering
+\label{motex1}
+\end{figure}
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Evaluate an organic model using Bandit Feedback}
+
+  For such an organic method, a standard metric is hitrate-at-5 (HR@5) also called Recall@5 or Precision@5.
+\begin{figure}[h!]
+\includegraphics[scale=0.4]{images/evalorganicwithbandit2.png}
+\centering
+\label{motex1}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Evaluate an organic model using Bandit Feedback: IPS evaluation}
+
+Hit-rate is a purely organic measure that is available offline and is seen in many recommender systems papers...  \pause but it is a purely organic metric, it doesn't predict performance at AB test time, at least not explicitly.
+
+\pause
+
+Can we change to an offline measure that predicts the result of an AB test?
+
+\pause
+
+Imagine the past policy is randomized, i.e. with some probability it will choose any action for a given user.  \pause Random isn't the same as uniform and the policy typically will not be uniformly random. \pause \emph{Why?} \pause ... still, a uniformly random logging policy is an interesting thought experiment or reference.
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{Evaluate an organic model using Bandit Feedback: IPS evaluation}
+
+The central idea of an inverse propensity score is that we evaluate a new policy using the logs of an old policy.  \pause We identify times in history where the new policy would make the same recommendation as the old policy, we then look at the contribution of the reward and how probable the policy is to take this action. 
+
+\[
+\text{CTR}_{\pi_t}(\mathcal{L}) = \frac{1}{|\mathcal{L}|}\sum_{(a,x,c) \in \mathcal {L}} c \frac{\pi_t(a|x)}{\pi_l(a|x)}
+\]
+
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Evaluate an organic model using Bandit Feedback}
+\begin{figure}[h!]
+\includegraphics[scale=0.4]{images/evalorganicwithbandit3.png}
+\centering
+\label{motex1}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Evaluate an organic model using Bandit Feedback}
+\begin{figure}[h!]
+\includegraphics[scale=0.4]{images/evalorganicwithbandit4.png}
+\centering
+\label{motex1}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Evaluate an organic model using Bandit Feedback}
+\begin{figure}[h!]
+\includegraphics[scale=0.4]{images/evalorganicwithbandit5.png}
+\centering
+\label{motex1}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Evaluate an organic model using Bandit Feedback}
+\begin{figure}[h!]
+\includegraphics[scale=0.4]{images/evalorganicwithbandit6.png}
+\centering
+\label{motex1}
+\end{figure}
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Evaluate an organic model using Bandit Feedback: Simulated A/B-Test Results}
+\begin{figure}[h!]
+\includegraphics[scale=0.4]{images/evalorganicwithbandit7.png}
+\centering
+\label{motex1}
+\end{figure}
+\end{frame}
