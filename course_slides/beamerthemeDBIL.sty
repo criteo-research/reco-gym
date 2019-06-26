@@ -1,0 +1,98 @@
+%% 20150707 Durham Bioimage Informatics Laboratory Beamer Theme
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{beamerthemeDBIL}
+
+%% Packages & Libraries
+\RequirePackage{pgfopts}
+\RequirePackage{tikz}
+\usetikzlibrary{calc,positioning}
+\RequirePackage{etoolbox}
+\RequirePackage{calc}
+\graphicspath{{./images/}{./logo/}}
+
+%% Macros
+\newcommand{\Filled}{
+	\begin{tikzpicture}[overlay, remember picture]
+		\draw [fill=criteo] ($ (current page.north west) $) rectangle ($ (current page.south east) $);
+		\node[anchor=south east] (logo) at ($ (current page.south east) + (-1em,1em)$) {
+			\includegraphics[width=5em, height=3em, keepaspectratio]{logo/DUW}};
+	\end{tikzpicture}
+}
+
+\newcommand{\Framed}{
+	\begin{tikzpicture}[overlay, remember picture]
+		\draw [line width=10pt, criteo] ($ (current page.north west) $) rectangle ($ (current page.south east) $);
+		\node[anchor=south east] (logo) at ($ (current page.south east) + (-1em,1em)$) {
+			\includegraphics[width=5em, height=3em, keepaspectratio]{logo/DU}};
+	\end{tikzpicture}
+}
+
+\newenvironment{LogoBar}{
+	\begin{tikzpicture}[overlay, remember picture, auto]
+		\draw [fill=white] ($ (current page.south west) + (0,5em) $) rectangle ($ (current page.south east) + (0,0) $);
+		\node[anchor=south east] (Anchor) at ($ (current page.south east) + (-1em,1em)$) {
+			\includegraphics[width=5em, height=3em, keepaspectratio]{logo/DU}};
+		\node[left=0.05em of Anchor] (Anchor) {};
+		\begin{scope}
+}{
+	\end{scope}
+	\end{tikzpicture}
+}
+
+% Set Page Framing
+\usebackgroundtemplate{
+	\Framed
+}
+
+\pgfkeys{/DBIL/.cd,
+  .search also={
+    /DBIL/inner,
+    /DBIL/outer,
+    /DBIL/color,
+  },
+  block/.code=\pgfkeysalso{
+    inner/block=#1,
+    color/block=#1,
+  },
+}
+
+\useinnertheme{DBIL}
+\useoutertheme{DBIL}
+\usecolortheme{DBIL}
+
+\AtEndPreamble{%
+  \@ifpackageloaded{pgfplots}{%
+    \RequirePackage{pgfplotsthemetol}
+  }{}
+}
+
+\newcommand\makephoto[1]{%
+	\begin{frame}
+	\vfill
+	\centering
+	\includegraphics[width=0.8\linewidth]{photos/#1}
+	\vfill
+	\end{frame}
+}
+
+\def\@DBIL@plaintitleformat#1{#1}
+
+\newcommand{\plain}[1]{%
+  \begingroup
+	% Background Colour
+    \usebackgroundtemplate{
+    	\Filled
+    }
+	% Text
+    \begin{frame}
+      \centering
+      \vfill
+      \vspace{1em}
+      \huge{\color{white}#1}
+      \vfill
+    \end{frame}
+  \endgroup
+}
+
+\ProcessPgfOptions{/DBIL}
+\endinput

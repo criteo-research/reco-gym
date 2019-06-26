@@ -1,0 +1,133 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{beamercolorthemeDBIL}
+
+%% Colours
+\definecolor{blackC}{HTML}{321F20}%#321F20
+\definecolor{palatine}{HTML}{7E317B}%#7E317B
+\definecolor{255C}{HTML}{7E317B}%#7E317B
+\definecolor{257C}{HTML}{D8ACE0}%#D8ACE0
+\definecolor{634C}{HTML}{006388}%#006388
+\definecolor{201C}{HTML}{AA2B4A}%#AA2B4A
+\definecolor{5655C}{HTML}{CFDAD1}%#CFDAD1
+\definecolor{290C}{HTML}{C4E5FA}%#C4E5FA
+\definecolor{5835C}{HTML}{9FA161}%#9FA161
+\definecolor{459C}{HTML}{E8E391}%#E8E391
+\definecolor{675C}{HTML}{C43B8E}%#C43B8E
+\definecolor{5493C}{HTML}{91B8BD}%#91B8BD
+\definecolor{warmgrey8C}{HTML}{968E85}%#968E85
+\definecolor{ustinov}{HTML}{003865}%#003865
+\definecolor{josephinebutler}{HTML}{D22630}%#D22630
+\definecolor{criteo}{HTML}{FF8E39}
+
+\pgfkeys{
+  /DBIL/color/block/.cd,
+    .is choice,
+    transparent/.code=\@DBIL@block@transparent,
+    fill/.code=\@DBIL@block@fill,
+}
+
+\pgfkeys{
+  /DBIL/color/background/.cd,
+    .is choice,
+    dark/.code=\@DBIL@colors@dark,
+    light/.code=\@DBIL@colors@light,
+}
+
+\newcommand{\@DBIL@color@setdefaults}{
+  \pgfkeys{/DBIL/color/.cd,
+    background=light,
+    block=transparent,
+  }
+}
+
+\newcommand{\@DBIL@colors@dark}{
+  \setbeamercolor{normal text}{%
+    fg=white,
+    bg=criteo
+  }
+}
+
+\newcommand{\@DBIL@colors@light}{
+  \setbeamercolor{normal text}{%
+    fg=criteo,
+    bg=white,
+  }
+}
+
+\setbeamercolor{palette primary}{%
+  fg=white,
+  bg=criteo,
+}
+
+\setbeamercolor{titlelike}{%
+  fg=white,
+}
+
+\setbeamercolor{frametitle}{%
+  fg=criteo,
+  bg=,
+}
+
+\setbeamercolor{section in toc}{%
+	fg=criteo,
+}
+
+\setbeamercolor{item}{%
+	fg=criteo,
+}
+
+\setbeamercolor{caption name}{%
+	fg=criteo,
+}
+
+\setbeamercolor{bibliography entry author}{%
+	fg=criteo,
+}
+
+\setbeamercolor{bibliography entry location}{%
+	fg=criteo,
+}
+
+\setbeamercolor{bibliography entry title}{%
+	fg=criteo,
+}
+
+\newcommand{\@DBIL@block@transparent}{
+  \setbeamercolor{block title}{use=normal text, parent=normal text}
+}
+
+\newcommand{\@DBIL@block@fill}{
+  \setbeamercolor{block title}{%
+    use=normal text,
+    fg=normal text.fg,
+    bg=normal text.bg!80!fg
+  }
+}
+
+\setbeamercolor{block title alerted}{%
+    use={block title, alerted text},
+    bg=block title.bg,
+    fg=alerted text.fg
+}
+
+\setbeamercolor{block title example}{%
+    use={block title, example text},
+    bg=block title.bg,
+    fg=example text.fg
+}
+
+\setbeamercolor{block body alerted}{use=block body, parent=block body}
+\setbeamercolor{block body example}{use=block body, parent=block body}
+\setbeamercolor{block body}{
+  use={block title, normal text},
+  bg=block title.bg!50!normal text.bg
+}
+
+\setbeamercolor{footnote}{fg=normal text.fg!90}
+\setbeamercolor{footnote mark}{fg=.}
+
+\@DBIL@color@setdefaults
+
+\ProcessPgfPackageOptions{/DBIL/color}
+\mode<all>
+\endinput

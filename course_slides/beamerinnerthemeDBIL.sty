@@ -1,0 +1,186 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{beamerinnerthemeDBIL}
+
+%% Title Page
+\setbeamertemplate{title page}{
+	\begingroup
+	% Background
+	\usebackgroundtemplate{
+		\Filled
+	}
+	% Title Page
+	\begin{frame}
+	    \vfill%
+	    %Title
+	    \ifx\inserttitle\@empty\else{{%
+	      \usebeamercolor[fg]{title}%
+		  \huge{\textrm{\inserttitle}}%
+	      \par%
+	      \vspace*{0.5em}
+	    }}
+	    \fi
+	    %Subtitle
+	    \ifx\insertsubtitle\@empty\else{{%
+	      \usebeamercolor[fg]{title}%
+   	      \textbf{\insertsubtitle}%
+	      \par%
+	      \vspace*{0.5em}
+	    }}
+	    \fi
+	    \par%
+	    \vspace*{1em}%
+	    %Author
+	    \ifx\beamer@shortauthor\@empty\else{{%
+	      \usebeamercolor[fg]{title}%
+	      \insertauthor%
+	      \par%
+	    }}
+	    \fi
+	    %Institute
+	    \ifx\insertinstitute\@empty\else{{%
+	      \usebeamercolor[fg]{title}%
+	      \insertinstitute%
+	      \par%
+	      \vspace*{0.25em}
+	    }}
+	    \fi
+	    %Date
+	    \ifx\insertdate\@empty\else{{%
+	      \vspace*{3mm}
+	      \usebeamercolor[fg]{title}%
+	      \tiny{\textit{\insertdate}}%
+	      \par%
+	    }}
+	    \fi
+	    \vfill
+	    \vspace*{1mm}
+	    %% Logo Bar
+  		\newcounter{numLogo}
+		\setcounter{numLogo}{0}%
+		\foreach \body in \Bodies{%
+			\stepcounter{numLogo}%
+		}%
+		\newcommand{\numLogo}{\the\value{numLogo}}
+		\newcommand{\wdLogo}{((\paperwidth-2em)/\numLogo) - (2*0.1em)}
+		\begin{LogoBar}
+			\foreach \body in \Bodies{%
+				\node[left=0.05em of Anchor, anchor=east] (\body) {
+					\includegraphics[width=5em,height=3em,keepaspectratio]{\body}
+				};
+				\node[left=0.05em of \body] (Anchor) {};
+			}%
+		\end{LogoBar}
+		\def\Bodies{}
+	\end{frame}
+  \endgroup
+}
+
+\def\maketitle{%
+  \usebeamertemplate{title page}
+}
+
+%% Ackowledgements Page
+\setbeamertemplate{acknowledgements page}{
+	\begingroup
+	% Background
+	\usebackgroundtemplate{
+		\Filled
+	}
+	% People
+	\begin{frame}{\usebeamercolor[fg]{title}{Acknowledgments}}
+	\vspace*{-10pt}
+		\begin{columns}[t]
+	    \begin{column}{0.3\textwidth}
+        \usebeamercolor[fg]{title}%
+	      The group:
+	      \begin{itemize}
+		      \foreach \member in \Group{%
+						\item \member%
+					}%
+				\end{itemize}
+	    \end{column}
+	    \begin{column}{0.3\textwidth}
+          \usebeamercolor[fg]{title}%
+          Collaborators:
+	      	\begin{itemize}
+		      	\foreach \person in \Collaborators{%
+							\item \person%
+						}%
+					\end{itemize}
+	    \end{column}
+	    \begin{column}{0.3\textwidth}
+				\usebeamercolor[fg]{title}%
+				Thanks to:
+	      \begin{itemize}
+		      \foreach \thing in \Thanks{%
+						\item \thing%
+					}%
+				\end{itemize}
+	  	\end{column}
+   	\end{columns}
+
+	  %% Logo Bar
+  	\newcounter{numLogoA}
+		\setcounter{numLogoA}{0}%
+		\foreach \body in \Bodies{%
+			\stepcounter{numLogoA}%
+		}%
+		\newcommand{\numLogoA}{\the\value{numLogoA}}
+		\newcommand{\wdLogoA}{((\paperwidth-2em)/\numLogoA) - (2*0.1em)}
+
+		\begin{LogoBar}
+			\foreach \body in \Bodies{%
+				\node[left=0.05em of Anchor, anchor=east] (\body) {
+					\includegraphics[width=5em,height=3em,keepaspectratio]{\body}
+				};
+				\node[left=0.05em of \body] (Anchor) {};
+			}%
+		\end{LogoBar}
+		\def\Bodies{}
+	\end{frame}
+  \endgroup
+}
+
+\def\makeacknowledgements{%
+  \usebeamertemplate{acknowledgements page}
+}
+
+\newcommand{\@DBIL@sectionpage@none}{
+  \AtBeginSection{
+    % intenionally empty
+  }
+}
+
+\setlength{\leftmargini}{1em}
+\setlength{\leftmarginii}{1em}
+\setlength{\leftmarginiii}{1em}
+\setbeamertemplate{itemize item}{\textbullet}
+\setbeamertemplate{itemize subitem}{\textbullet}
+\setbeamertemplate{itemize subsubitem}{\textbullet}
+\setbeamertemplate{caption label separator}{: }
+\setbeamertemplate{caption}[numbered]
+\setbeamertemplate{footnote}{%
+  \parindent 0em\noindent%
+  \raggedright
+  \usebeamercolor{footnote}\hbox to 0.8em{\hfil\insertfootnotemark}\insertfootnotetext\par%
+}
+
+%% Contents
+\setbeamertemplate{section in toc}[sections numbered]
+% \makeatletter
+\patchcmd{\beamer@sectionintoc}{\vskip1.5em}{\vskip0.5em}{}{}
+% \makeatother
+
+%% Bibliography
+\setbeamertemplate{bibliography item}{
+	\begin{tikzpicture}
+		\fill[palatine] (-0.1em,-0.1em) circle(0.2em);
+	\end{tikzpicture}
+}
+
+\mode<all>
+\setlength{\parskip}{0.5em}
+\linespread{1.15}
+
+\ProcessPgfPackageOptions{/DBIL/inner}
+\endinput

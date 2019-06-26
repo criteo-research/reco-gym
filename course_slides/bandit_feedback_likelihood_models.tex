@@ -1,0 +1,81 @@
+\documentclass[10pt]{beamer}
+\let\Tiny\tiny% http://tex.stackexchange.com/q/58087/5764
+\usetheme{DBIL}
+\usepackage{bm}
+
+\newcommand{\bbeta}{\bm{\beta}}
+\newcommand{\bX}{\bm{X}}
+\newcommand{\by}{\bm{y}}
+\newcommand{\btheta}{\bm{\theta}}
+\newcommand{\bA}{\bm{A}}
+\newcommand{\bI}{\bm{I}}
+\newcommand{\ba}{\bm{a}}
+\newcommand{\bPhi}{\bm{\Phi}}
+
+%% Packages
+\usepackage{booktabs}
+\usepackage[scale=2]{ccicons}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.9}
+\graphicspath{{./images/}{./photos/}{./logo/}}
+
+%\usepackage{epstopdf}%Needed for Windows PCs
+\usepackage{subfigure}
+\usepackage{amsmath,amssymb}
+\usepackage[lined]{algorithm2e}
+\usepackage{textcomp}
+
+\setbeamercolor{normal text}{fg=black}
+
+%% Title Page Parameters
+\title{NEURAL NETWORKS AND CAUSAL RECOMMENDATION 
+Part III. Bandit Feedback and Likelihood Models for Recommendation}
+
+\date{\today}
+\author{David Rohde, Olivier Jeunen, Flavian Vasile}
+\institute{Criteo Research}
+\def\Bodies{}%Institutes and funding bodies for title page footer
+
+\begin{document}
+
+%% Title Slide
+\maketitle
+
+\begin{frame}
+\frametitle{Collaborators:}
+
+Special thanks to:
+\begin{itemize}
+    \item Dmytro Mykhaylov
+    \item Martin Bompaire
+    \item Stephen Bonner
+\end{itemize}
+
+\end{frame}
+
+
+%\begin{frame}
+%\frametitle{Structure of the talk}
+
+%\begin{itemize}
+%\item Recommendation Revisited: Acadmic vs Industry Reco
+%\end{itemize}
+
+%\end{frame}
+
+\input{setup}
+\input{mod3}
+%\input{011-intro-reco-ads}
+%\input{012-intro-shortcomings}
+%\input{020-causality-notation}
+%\input{021-causality-counterfactual}
+%\input{022-causality-offpolicy}
+%\input{023-causality-embedded}
+%\input{031-causal-theory}
+%\input{032-causal-results}
+%\input{04-next}
+
+
+\plain{Thank You!}
+
+\end{document}
