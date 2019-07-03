@@ -1,7 +1,7 @@
 from torch import nn, optim, Tensor
 
 from .abstract import Agent
-from recogym import Configuration
+from reco_gym import Configuration
 
 import numpy as np
 

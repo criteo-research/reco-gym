@@ -1,8 +1,8 @@
 import numpy as np
 from numpy.random.mtrand import RandomState
 
-from recogym.agents import AbstractFeatureProvider, ViewsFeaturesProvider, Model, ModelBasedAgent
-from recogym import Configuration
+from agents import AbstractFeatureProvider, ViewsFeaturesProvider, Model, ModelBasedAgent
+from reco_gym import Configuration
 
 organic_user_count_args = {
     'num_products': 10,
@@ -13,6 +13,10 @@ organic_user_count_args = {
 
     # Weight History Function: how treat each event back in time.
     'weight_history_function': None,
+
+    # reverse popularity.
+    'reverse_pop': False,
+
 }
 
 
@@ -33,7 +37,11 @@ class OrganicUserEventCounterModelBuilder(AbstractFeatureProvider):
                     self.rng = RandomState(self.config.random_seed)
 
             def act(self, observation, features):
-                action_proba = features / np.sum(features, axis = 0)
+                if not self.config.reverse_pop:
+                    action_proba = features / np.sum(features, axis = 0)
+                else:
+                    action_proba = 1 -features / np.sum(features, axis = 0)
+                    action_proba = action_proba/sum(action_proba)                    
                 if self.config.select_randomly:
                     action = self.rng.choice(self.config.num_products, p = action_proba)
                     ps = action_proba[action]

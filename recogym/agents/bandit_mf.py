@@ -2,7 +2,7 @@ import torch
 import numpy as np
 from torch import nn, optim, Tensor
 
-from recogym import Configuration
+from reco_gym import Configuration
 
 from .abstract import Agent
 
