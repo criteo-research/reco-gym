@@ -44,6 +44,8 @@ if __name__ == "__main__":
     parser.add_argument('--Utest', type=int, default=100, help='Number of users to test')
     parser.add_argument('--seed', type=int, default=100, help='Seed')
     parser.add_argument('--K', type=int, default=20, help='Number of latent factors')
+    parser.add_argument('--F', type=int, default=20, help='Number of flips, how different is bandit from organic')
+
     parser.add_argument('--sigma_omega', type=float, default=20, help='sigma_omega')
 
     args = parser.parse_args()
