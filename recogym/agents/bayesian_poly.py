@@ -76,7 +76,7 @@ class BayesianModelBuilder(AbstractFeatureProvider):
 
         Sigma = np.kron(self.config.aa * np.eye(P) + self.config.bb,
                         self.config.aa * np.eye(P) + self.config.bb)
-        fit = pystan.stan('agents/model.stan', data = {
+        fit = pystan.stan('recogym/agents/model.stan', data = {
             'N': features.shape[0],
             'P': features.shape[1],
             'XA': XA,
