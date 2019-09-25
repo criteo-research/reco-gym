@@ -252,7 +252,6 @@ def gather_agent_stats(
                 for num_offline_users in user_samples
             ]
 
-
             for result in map(_collect_stats, argss) if num_epochs == 1 else [
                 _collect_stats(args) for args in argss
             ]:
