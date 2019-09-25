@@ -24,23 +24,22 @@ class OrganicMFSquare(nn.Module, Agent):
     The Agent that selects an Action from the model that performs
      Organic Events matrix factorisation.
     """
-
     def __init__(self, config = Configuration(organic_mf_square_args)):
         nn.Module.__init__(self)
         Agent.__init__(self, config)
 
         self.product_embedding = nn.Embedding(
-            self.config.num_products, self.embed_dim
+            self.config.num_products, self.config.embed_dim
         )
-
-        self.output_layer = nn.Linear(
-            self.embed_dim, self.config.num_products
+        self.user_embedding = nn.Embedding(
+            self.config.num_products, self.config.embed_dim
         )
 
         # Initializing optimizer type.
-        self.optimizer = self.optim_function(
-            self.parameters(), lr = self.learning_rate
+        self.optimizer = self.config.optim_function(
+            self.parameters(), lr = self.config.learning_rate
         )
+
 
         self.last_product_viewed = None
         self.curr_step = 0
