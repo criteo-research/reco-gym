@@ -215,7 +215,6 @@ class AbstractEnv(gym.Env, ABC):
                     'u': observation.context().user(),
                     'a': int(self.rng.choice(self.config.num_products)),
                     'ps': 1.0 / self.config.num_products,
-                    'ps-a': np.ones(self.config.num_products) / self.config.num_products,
                 }
 
         observation, reward, done, info = self.step(action['a'] if action is not None else None)
