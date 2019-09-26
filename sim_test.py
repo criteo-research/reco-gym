@@ -24,7 +24,7 @@ parser.add_argument('--seed', type=int, default=100, help='Seed')
 parser.add_argument('--K', type=int, default=20, help='Number of latent factors')
 parser.add_argument('--F', type=int, default=20, help='Number of flips, how different is bandit from organic')
 parser.add_argument('--log_epsilon', type=float, default=0.05, help='Pop logging policy epsilon')
-parser.add_argument('--sigma_omega', type=float, default=20, help='sigma_omega')
+parser.add_argument('--sigma_omega', type=float, default=0.01, help='sigma_omega')
 parser.add_argument('--entries_dir', type=str, default='entries', help='directory with agent .py files')
 
 
