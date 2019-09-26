@@ -91,7 +91,7 @@ for e in os.listdir(entries_dir):
     print(df)
     adf.append(df)
 
-out_dir = entries_dir + '_' + str(start)
+out_dir = entries_dir + '_' + str(P) + '_' + str(U) + '_' + str(Utest) + '_' + str(start)
 os.mkdir(out_dir)
 fp = open(out_dir + '/config.txt','w')
 fp.write(str(args))
