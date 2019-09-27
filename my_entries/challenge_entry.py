@@ -1,11 +1,11 @@
-import numpy as np
+from recogym import build_agent_init
 
+import numpy as np
 from recogym.agents import Agent
-from recogym import Configuration
-from recogym import to_categorical
+from recogym import Configuration, to_categorical
 
 entry_args = {
-    'num_products': 10,
+    'num_products': P,
 }
 
 
@@ -51,3 +51,4 @@ class Entry(Agent):
         if observation.sessions():
             self.last_product_viewed = observation.sessions()[-1]['v']
 
+agent = build_agent_init('MyEntry', Entry, {**entry_args})
