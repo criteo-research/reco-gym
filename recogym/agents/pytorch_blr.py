@@ -1,5 +1,4 @@
 import numpy as np
-import tensorflow as tf
 import torch
 from torch.autograd import Variable
 from torch.nn import functional as F
@@ -90,7 +89,7 @@ class PyTorchBLRModelBuilder(AbstractFeatureProvider):
         X = features
         N = X.shape[0]
         P = X.shape[1]
-        A = tf.keras.utils.to_categorical(actions, P)
+        A = to_categorical(actions, P)
         XA = np.array([np.kron(X[n, :], A[n, :]) for n in range(N)])
         y = deltas.reshape((deltas.shape[0],1))
 

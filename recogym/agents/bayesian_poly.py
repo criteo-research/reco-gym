@@ -1,6 +1,5 @@
 import numpy as np
 import pystan
-import tensorflow as tf
 from scipy.special import expit
 
 from recogym.agents import (
@@ -70,7 +69,7 @@ class BayesianModelBuilder(AbstractFeatureProvider):
         X = features
         N = X.shape[0]
         P = X.shape[1]
-        A = tf.keras.utils.to_categorical(actions, P)
+        A = to_categorical(actions, P)
         XA = np.array([np.kron(X[n, :], A[n, :]) for n in range(N)])
         y = deltas  # clicks
 

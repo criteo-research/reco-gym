@@ -1,5 +1,4 @@
 import numpy as np
-import tensorflow as tf
 import torch
 from torch.autograd import Variable
 from torch.nn import functional as F
