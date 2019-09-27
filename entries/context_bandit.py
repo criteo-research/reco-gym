@@ -1,3 +1,4 @@
+from recogym import build_agent_init
 from recogym.agents import LogregMulticlassIpsAgent, logreg_multiclass_ips_args
 logreg_multiclass_ips_args['num_products'] = P
 
