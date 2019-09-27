@@ -31,8 +31,8 @@ class OrganicMFSquare(nn.Module, Agent):
         self.product_embedding = nn.Embedding(
             self.config.num_products, self.config.embed_dim
         )
-        self.user_embedding = nn.Embedding(
-            self.config.num_products, self.config.embed_dim
+        self.output_layer = nn.Linear(
+            self.config.embed_dim, self.config.num_products
         )
 
         # Initializing optimizer type.
@@ -48,17 +48,17 @@ class OrganicMFSquare(nn.Module, Agent):
 
     def forward(self, product):
 
-        product = Tensor([product]).long()
+        product = Tensor([product])
 
-        a = self.product_embedding(product)
+        a = self.product_embedding(product.long())
         b = self.output_layer(a)
 
         return b
 
     def act(self, observation, reward, done):
 
-        if observation is not None:
-            logits = self.forward(observation[-1][-1])
+        if observation is not None and len(observation.current_sessions) > 0:
+            logits = self.forward(observation.current_sessions[-1]['v'])
 
             # No exploration strategy, choose maximum logit.
             self.action = logits.argmax().item()
@@ -85,10 +85,10 @@ class OrganicMFSquare(nn.Module, Agent):
             # Loop over the number of products.
             for i in range(len(prods) - 1):
 
-                logit = self.forward(prods[i][-1])
+                logit = self.forward(prods[i]['v'])
 
                 # Converting label into Tensor.
-                label = Tensor([prods[i + 1][-1]]).long()
+                label = Tensor([prods[i + 1]['v']]).long()
 
                 # Calculating supervised loss.
                 loss = self.config.loss_function(logit, label)
@@ -109,5 +109,5 @@ class OrganicMFSquare(nn.Module, Agent):
             self.train_data = []
         else:
             if observation is not None:
-                data = observation
+                data = observation.current_sessions
                 self.train_data.append(data)

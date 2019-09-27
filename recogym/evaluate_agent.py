@@ -252,9 +252,11 @@ def gather_agent_stats(
                 for num_offline_users in user_samples
             ]
 
-            for result in map(_collect_stats, argss) if num_epochs == 1 else [
-                _collect_stats(args) for args in argss
-            ]:
+            for result in (
+                    [_collect_stats(args) for args in argss]
+                    if num_epochs == 1 else
+                    pool.map(_collect_stats, argss)
+            ):
                 stats[AgentStats.Q0_025].append(result[1])
                 stats[AgentStats.Q0_500].append(result[0])
                 stats[AgentStats.Q0_975].append(result[2])
