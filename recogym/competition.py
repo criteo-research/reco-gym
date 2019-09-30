@@ -74,9 +74,9 @@ def competition_score(
     q0_975 = []
     for agent_name in agent_stats[AgentStats.AGENTS]:
         agent_values = agent_stats[AgentStats.AGENTS][agent_name]
-        q0_025.append(agent_values[AgentStats.Q0_025])
-        q0_500.append(agent_values[AgentStats.Q0_500])
-        q0_975.append(agent_values[AgentStats.Q0_975])
+        q0_025.append(agent_values[AgentStats.Q0_025][0])
+        q0_500.append(agent_values[AgentStats.Q0_500][0])
+        q0_975.append(agent_values[AgentStats.Q0_975][0])
 
     time_end = datetime.datetime.now()
     seconds = (time_end - time_start).total_seconds()

@@ -1,12 +1,14 @@
 import argparse
 import datetime
+import glob
 import imp
 import os
 
 import pandas as pd
 
 from recogym import (
-    competition_score
+    competition_score,
+    AgentInit,
 )
 
 if __name__ == "__main__":
@@ -43,28 +45,43 @@ if __name__ == "__main__":
     adf = []
     start = datetime.datetime.now()
 
-    tmp_module = imp.new_module('tmp_module')
-    exec(open(entries_dir + '/test_agent.py').read(), tmp_module.__dict__, )
-    df = competition_score(
-        P,
-        U,
-        Utest,
-        seed,
-        K,
-        F,
-        log_epsilon,
-        sigma_omega,
-        tmp_module.TestAgent,
-        tmp_module.test_agent_args
-    )
+    for agent_file in glob.glob(entries_dir + '/*.py'):
+        tmp_module = imp.new_module('tmp_module')
+        exec(
+            open(os.path.join(entries_dir, agent_file)).read(),
+            tmp_module.__dict__
+        )
+        if hasattr(tmp_module, 'TestAgent'):
+            agent_class = tmp_module.TestAgent
+            agent_configs = tmp_module.test_agent_args
+        else:
+            if hasattr(tmp_module, 'agent'):
+                for agent_key in tmp_module.agent.keys():
+                    agent_class = tmp_module.agent[agent_key][AgentInit.CTOR]
+                    agent_configs = tmp_module.agent[agent_key][AgentInit.DEF_ARGS]
+            else:
+                print('There is not Agent to test!')
+                continue
+        df = competition_score(
+            P,
+            U,
+            Utest,
+            seed,
+            K,
+            F,
+            log_epsilon,
+            sigma_omega,
+            agent_class,
+            agent_configs
+        )
 
-    df = df.join(pd.DataFrame({
-        'entry': [entries_dir]
-    }))
+        df = df.join(pd.DataFrame({
+            'entry': [agent_file]
+        }))
 
-    print(df)
+        print(df)
 
-    adf.append(df)
+        adf.append(df)
 
     out_dir = entries_dir + '_' + str(P) + '_' + str(U) + '_' + str(Utest) + '_' + str(start)
     os.mkdir(out_dir)
@@ -73,5 +90,5 @@ if __name__ == "__main__":
     fp.close()
 
     leaderboard = pd.concat(adf)
-    leaderboard = leaderboard.sort_values(by = 'q0.5', ascending = False)
+    leaderboard = leaderboard.sort_values(by = 'q0.500', ascending = False)
     leaderboard.to_csv(out_dir + '/leaderboard.csv')

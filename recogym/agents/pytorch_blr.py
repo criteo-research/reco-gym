@@ -1,17 +1,15 @@
 import numpy as np
-import tensorflow as tf
 import torch
 from torch.autograd import Variable
 from torch.nn import functional as F
-from scipy.special import expit
 
+from recogym import Configuration, to_categorical
 from recogym.agents import (
     AbstractFeatureProvider,
     Model,
     ModelBasedAgent,
     ViewsFeaturesProvider
 )
-from recogym import Configuration
 
 pytorch_blr_args = {
     'n_epochs': 50,
@@ -19,6 +17,7 @@ pytorch_blr_args = {
     'random_seed': np.random.randint(2 ** 31 - 1),
     'IPS': False
 }
+
 
 class PyTorchBLRModelBuilder(AbstractFeatureProvider):
     def __init__(self, config):
@@ -49,14 +48,14 @@ class PyTorchBLRModelBuilder(AbstractFeatureProvider):
                 X = features
                 P = X.shape[1]
                 A = np.eye(P)
-                XA = np.kron(X,A)
+                XA = np.kron(X, A)
                 XA = Variable(torch.Tensor(XA))
                 action_probs = self.model(XA).detach().numpy().ravel()
 
                 action = np.argmax(action_probs)
                 ps_all = np.zeros(P)
                 ps_all[action] = 1.0
-                #/OWN CODE
+                # /OWN CODE
 
                 return {
                     **super().act(observation, features),
@@ -66,6 +65,7 @@ class PyTorchBLRModelBuilder(AbstractFeatureProvider):
                         'ps-a': ps_all,
                     },
                 }
+
         class BinomialLogisticRegressionModel(torch.nn.Module):
             def __init__(self, input_dim, output_dim):
                 super(BinomialLogisticRegressionModel, self).__init__()
@@ -90,19 +90,19 @@ class PyTorchBLRModelBuilder(AbstractFeatureProvider):
         X = features
         N = X.shape[0]
         P = X.shape[1]
-        A = tf.keras.utils.to_categorical(actions, P)
+        A = to_categorical(actions, P)
         XA = np.array([np.kron(X[n, :], A[n, :]) for n in range(N)])
-        y = deltas.reshape((deltas.shape[0],1))
+        y = deltas.reshape((deltas.shape[0], 1))
 
         # Generate model 
-        model = BinomialLogisticRegressionModel(P*P, 1)
+        model = BinomialLogisticRegressionModel(P * P, 1)
 
         # Convert data to torch objects
         X = Variable(torch.Tensor(XA))
         y = Variable(torch.Tensor(y))
 
         # Set sample weights
-        w = torch.Tensor(pss.reshape((pss.shape[0],1)) ** -1)
+        w = torch.Tensor(pss.reshape((pss.shape[0], 1)) ** -1)
 
         # Binary cross-entropy for as loss criterion
         criterion = torch.nn.BCELoss(reduction = 'none')
@@ -139,6 +139,7 @@ class PyTorchBLRModelBuilder(AbstractFeatureProvider):
             PyTorchBLRFeaturesProvider(self.config),  # Poly is a bad name ..
             PyTorchBLRModel(self.config, model)
         )
+
 
 class PyTorchBLRAgent(ModelBasedAgent):
     """

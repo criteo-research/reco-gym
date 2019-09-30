@@ -1,15 +1,15 @@
 import numpy as np
 import pystan
-import tensorflow as tf
 from scipy.special import expit
 
+from recogym import Configuration
 from recogym.agents import (
     AbstractFeatureProvider,
     Model,
     ModelBasedAgent,
     ViewsFeaturesProvider
 )
-from recogym import Configuration
+from recogym.agents.organic_count import to_categorical
 
 bayesian_poly_args = {
     'num_products': 10,
@@ -70,7 +70,7 @@ class BayesianModelBuilder(AbstractFeatureProvider):
         X = features
         N = X.shape[0]
         P = X.shape[1]
-        A = tf.keras.utils.to_categorical(actions, P)
+        A = to_categorical(actions, P)
         XA = np.array([np.kron(X[n, :], A[n, :]) for n in range(N)])
         y = deltas  # clicks
 
