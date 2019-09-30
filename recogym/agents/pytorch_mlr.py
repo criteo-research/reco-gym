@@ -233,9 +233,6 @@ class PyTorchMLRModelBuilder(AbstractFeatureProvider):
             # Save last loss
             last_obj = obj
 
-        if epoch == (max_epoch - 1):
-            print('Not converged after {0} iterations. Final loss: {1}'.format(max_epoch, last_obj))
-
         return (
             PyTorchMLRFeaturesProvider(self.config),
             PyTorchMLRModel(self.config, multinomial_model)
