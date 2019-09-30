@@ -86,7 +86,7 @@ def competition_score(
             'q0.025': q0_025,
             'q0.500': q0_500,
             'q0.975': q0_975,
-            'time (secs)': [seconds],
+            'time': [seconds],
         }
     )
 
