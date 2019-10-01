@@ -34,8 +34,6 @@ setup(
         "simplegeneric",
         "gym",
         "torch",
-        "pystan",
-        "tensorflow",
         "numba",
         "tqdm",
         "datetime",
