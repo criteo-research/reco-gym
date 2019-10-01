@@ -7,7 +7,8 @@ _RecoGym_ is a Open-AI gym RL environment for recommendation, which is defined b
 For getting starting with _RecoGym_ please view the 'Getting Started' Jupyter Notebook which will explain the functionality of the environment and detail the creation of a simple agent. The 'Compare Agent' notebook compares the recommendation performance of a selection of our included agents. The agent we include with _RecoGym_ can be found in the agents directory of this repository. 
 
 ## Dependencies and Requirements
-The code has been designed to support python 3.7+ only. The project has the following dependencies and version requirements:
+The code has been designed to support python 3.6+ only. The project has the following dependencies
+ and version requirements:
 
 - notebook=5.6.0+
 - matplotlib=2.2.3+
@@ -23,12 +24,16 @@ In this repository we provide a Anaconda environment setup file with all the req
 
 ```bash
 # install conda env
-conda create -n reco-gym
-conda activate reco-gym
+conda create -n reco-gym python=3.6
+conda activate reco-gym==0.1.2.0
 
 # conda support is missing, use pipinstead
-pip install gym
 pip install recogym
+```
+
+For MacOS users, you shall also install _`libomp`_:
+```bash
+brew install libomp
 ```
 
 ## Cite
