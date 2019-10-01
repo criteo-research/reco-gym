@@ -23,14 +23,12 @@ In this repository we provide a Anaconda environment setup file with all the req
 
 ```bash
 # install conda env
-conda install -c conda conda-env
-conda install -c r r-essentials
-
-# create environment based on environment.yml
-conda-env create environment.yml
+conda create -n reco-gym
+conda activate reco-gym
 
 # conda support is missing, use pipinstead
 pip install gym
+pip install recogym
 ```
 
 ## Cite
