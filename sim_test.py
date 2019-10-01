@@ -48,7 +48,7 @@ if __name__ == "__main__":
     for agent_file in glob.glob(entries_dir + '/*.py'):
         tmp_module = imp.new_module('tmp_module')
         exec(
-            open(os.path.join(entries_dir, agent_file)).read(),
+            open(agent_file).read(),
             tmp_module.__dict__
         )
         if hasattr(tmp_module, 'TestAgent'):
