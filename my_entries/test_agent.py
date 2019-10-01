@@ -11,8 +11,8 @@ test_agent_args = {
 class TestAgent(Agent):
     """Organic counter agent"""
 
-    def __init__(self, config = Configuration(entry_args)):
-        super(Entry, self).__init__(config)
+    def __init__(self, config = Configuration(test_agent_args)):
+        super(TestAgent, self).__init__(config)
 
         self.co_counts = np.zeros((self.config.num_products, self.config.num_products))
         self.corr = None
