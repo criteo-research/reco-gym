@@ -25,10 +25,9 @@ In this repository we provide a Anaconda environment setup file with all the req
 ```bash
 # install conda env
 conda create -n reco-gym python=3.6
-conda activate reco-gym==0.1.2.0
+conda activate reco-gym
 
-# conda support is missing, use pipinstead
-pip install recogym
+pip install recogym==0.1.2.2
 ```
 
 For MacOS users, you shall also install _`libomp`_:
