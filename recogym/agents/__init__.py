@@ -6,7 +6,6 @@ from .abstract import (
     Model,
     ModelBasedAgent
 )
-from .bayesian_poly import BayesianAgent, bayesian_poly_args
 from .bayesian_poly_vb import BayesianAgentVB
 from .bandit_mf import BanditMFSquare, bandit_mf_square_args
 from .bandit_count import BanditCount, bandit_count_args
