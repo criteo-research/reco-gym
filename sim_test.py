@@ -23,8 +23,8 @@ if __name__ == "__main__":
     parser.add_argument('--log_epsilon', type = float, default = 0.05,
                         help = 'Pop logging policy epsilon')
     parser.add_argument('--sigma_omega', type = float, default = 0.01, help = 'sigma_omega')
-    parser.add_argument('--entries_dir', type = str, default = 'entries',
-                        help = 'directory with test_agent.py file')
+    parser.add_argument('--entries_dir', type = str, default = 'my_entries',
+                        help = 'directory with agent files for a leaderboard of small baselines for P small try setting to leaderboard_entries')
 
     args = parser.parse_args()
 
