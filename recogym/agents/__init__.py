@@ -20,6 +20,5 @@ from .logreg_poly import LogregPolyAgent, logreg_poly_args
 from .organic_user_count import OrganicUserEventCounterAgent, organic_user_count_args
 
 from .pytorch_mlr import PyTorchMLRAgent, pytorch_mlr_args
-from .pytorch_banditnet import PyTorchBanditNetAgent, pytorch_banditnet_args
 
 
