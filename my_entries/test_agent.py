@@ -3,12 +3,12 @@ import numpy as np
 from recogym import Configuration, build_agent_init, to_categorical
 from recogym.agents import Agent
 
-entry_args = {
+test_agent_args = {
     'num_products': 10,
 }
 
 
-class Entry(Agent):
+class TestAgent(Agent):
     """Organic counter agent"""
 
     def __init__(self, config = Configuration(entry_args)):
