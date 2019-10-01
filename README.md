@@ -11,14 +11,13 @@ The code has been designed to support python 3.6+ only. The project has the foll
  and version requirements:
 
 - notebook=5.6.0+
-- matplotlib=2.2.3+
-- numpy=1.15.1+
-- python=3.7.1+
-- pandas=0.23.4+
-- scipy=1.1.0+
-- pytorch=1.0+
+- matplotlib=3.1.1+
+- numpy=1.17.2+
+- pandas=0.25.1+
+- scipy=1.3.1
+- torch-1.2.0+
 - rpy2=2.9.1+
-- scikit-learn=0.20.1+
+- scikit-learn=0.21.3+
 
 In this repository we provide a Anaconda environment setup file with all the required python packages and versions all ready configured. You can install it as follows:
 
