@@ -1,7 +1,7 @@
 import multiprocessing
 import time
-from multiprocessing import Pool
 from copy import deepcopy
+from multiprocessing import Pool
 
 from scipy.stats.distributions import beta
 
@@ -44,7 +44,9 @@ def _collect_stats(args):
         new_observation, _, done, _ = env.step(None)
         while not done:
             old_observation = new_observation
-            action, new_observation, reward, done, info = env.step_offline(old_observation, 0, False)
+            action, new_observation, reward, done, info = (
+                env.step_offline(old_observation, 0, False)
+            )
             new_agent.train(old_observation, action, reward, done)
     unique_user_id += num_offline_users
 
@@ -85,23 +87,22 @@ def test_agent(
     successes = 0
     failures = 0
 
-    with Pool(processes = multiprocessing.cpu_count()) as pool:
-        argss = [
-            {
-                'env': env,
-                'agent': agent,
-                'num_offline_users': num_offline_users,
-                'num_online_users': num_online_users,
-                'num_organic_offline_users': num_organic_offline_users,
-                'epoch_with_random_reset': epoch_with_random_reset,
-                'epoch': epoch,
-            }
-            for epoch in range(num_epochs)
-        ]
+    argss = [
+        {
+            'env': env,
+            'agent': agent,
+            'num_offline_users': num_offline_users,
+            'num_online_users': num_online_users,
+            'num_organic_offline_users': num_organic_offline_users,
+            'epoch_with_random_reset': epoch_with_random_reset,
+            'epoch': epoch,
+        }
+        for epoch in range(num_epochs)
+    ]
 
-        for result in [_collect_stats(args) for args in argss] if num_epochs == 1 else pool.map(_collect_stats, argss):
-            successes += result[AgentStats.SUCCESSES]
-            failures += result[AgentStats.FAILURES]
+    for result in [_collect_stats(args) for args in argss]:
+        successes += result[AgentStats.SUCCESSES]
+        failures += result[AgentStats.FAILURES]
 
     return (
         beta.ppf(0.500, successes + 1, failures + 1),

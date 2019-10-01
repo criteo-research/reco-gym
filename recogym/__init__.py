@@ -12,6 +12,7 @@ from .constants import (
     RoiMetrics
 )
 from .bench_agents import test_agent
+
 from .evaluate_agent import (
     evaluate_agent,
     build_agent_init,
@@ -25,6 +26,8 @@ from .evaluate_agent import (
     verify_agents_IPS,
     to_categorical
 )
+
+from .competition import competition_score
 
 from .envs.features.time.default_time_generator import DefaultTimeGenerator
 from .envs.features.time.normal_time_generator import NormalTimeGenerator
@@ -40,3 +43,4 @@ register(
     id = 'reco-gym-v1',
     entry_point = 'recogym.envs:RecoEnv1'
 )
+

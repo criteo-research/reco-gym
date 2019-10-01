@@ -1,3 +1,6 @@
+
+
+
 from .abstract import (
     Agent,
     FeatureProvider,
@@ -6,7 +9,6 @@ from .abstract import (
     Model,
     ModelBasedAgent
 )
-from .bayesian_poly import BayesianAgent, bayesian_poly_args
 from .bayesian_poly_vb import BayesianAgentVB
 from .bandit_mf import BanditMFSquare, bandit_mf_square_args
 from .bandit_count import BanditCount, bandit_count_args
@@ -20,6 +22,5 @@ from .logreg_poly import LogregPolyAgent, logreg_poly_args
 from .organic_user_count import OrganicUserEventCounterAgent, organic_user_count_args
 
 from .pytorch_mlr import PyTorchMLRAgent, pytorch_mlr_args
-from .pytorch_banditnet import PyTorchBanditNetAgent, pytorch_banditnet_args
 
 

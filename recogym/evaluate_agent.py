@@ -1,21 +1,26 @@
 import multiprocessing
-from multiprocessing import Pool
 import time
-import numpy as np
-import matplotlib.pyplot as plt
-
 from copy import deepcopy
+from multiprocessing import Pool
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 from scipy.stats import beta
 
 import recogym
-
-from recogym import Configuration, TrainingApproach, EvolutionCase, AgentInit, AgentStats, RoiMetrics
+from recogym import (
+    AgentInit,
+    AgentStats,
+    Configuration,
+    EvolutionCase,
+    RoiMetrics,
+    TrainingApproach
+)
 from recogym.agents import EpsilonGreedy, epsilon_greedy_args
-
-from .envs.session import OrganicSessions
 from .envs.context import DefaultContext
 from .envs.observation import Observation
-import pandas as pd
+from .envs.session import OrganicSessions
 
 EpsilonDelta = .02
 EpsilonSteps = 6  # Including epsilon = 0.0.
@@ -27,20 +32,20 @@ GraphCTRMax = 0.021
 
 
 # from Keras
-def to_categorical(y, num_classes=None, dtype='float32'):
-  y = np.array(y, dtype='int')
-  input_shape = y.shape
-  if input_shape and input_shape[-1] == 1 and len(input_shape) > 1:
-    input_shape = tuple(input_shape[:-1])
-  y = y.ravel()
-  if not num_classes:
-    num_classes = np.max(y) + 1
-  n = y.shape[0]
-  categorical = np.zeros((n, num_classes), dtype=dtype)
-  categorical[np.arange(n), y] = 1
-  output_shape = input_shape + (num_classes,)
-  categorical = np.reshape(categorical, output_shape)
-  return categorical
+def to_categorical(y, num_classes = None, dtype = 'float32'):
+    y = np.array(y, dtype = 'int')
+    input_shape = y.shape
+    if input_shape and input_shape[-1] == 1 and len(input_shape) > 1:
+        input_shape = tuple(input_shape[:-1])
+    y = y.ravel()
+    if not num_classes:
+        num_classes = np.max(y) + 1
+    n = y.shape[0]
+    categorical = np.zeros((n, num_classes), dtype = dtype)
+    categorical[np.arange(n), y] = 1
+    output_shape = input_shape + (num_classes,)
+    categorical = np.reshape(categorical, output_shape)
+    return categorical
 
 
 def evaluate_agent(
@@ -60,7 +65,8 @@ def evaluate_agent(
         new_observation, reward, done, _ = env.step(None)
         while not done:
             old_observation = new_observation
-            action, new_observation, reward, done, _ = env.step_offline(new_observation, reward, False)
+            action, new_observation, reward, done, _ = env.step_offline(new_observation, reward,
+                                                                        False)
             agent.train(old_observation, action, reward, done)
     unique_user_id += num_initial_train_users
 
@@ -101,7 +107,8 @@ def evaluate_agent(
                 elif training_approach == TrainingApproach.ALL_EXPLORATION_DATA:
                     should_update_training_data = not action['greedy']
                 elif training_approach == TrainingApproach.SLIDING_WINDOW_EXPLORATION_DATA:
-                    should_update_training_data = (not action['greedy']) and samples % sliding_window_samples == 0
+                    should_update_training_data = (not action[
+                        'greedy']) and samples % sliding_window_samples == 0
                 else:
                     assert False, f"Unknown Training Approach: {training_approach}"
 
@@ -252,9 +259,11 @@ def gather_agent_stats(
                 for num_offline_users in user_samples
             ]
 
-            for result in map(_collect_stats, argss) if num_epochs == 1 else [
-                _collect_stats(args) for args in argss
-            ]:
+            for result in (
+                    [_collect_stats(args) for args in argss]
+                    if num_epochs == 1 else
+                    pool.map(_collect_stats, argss)
+            ):
                 stats[AgentStats.Q0_025].append(result[1])
                 stats[AgentStats.Q0_500].append(result[0])
                 stats[AgentStats.Q0_975].append(result[2])
@@ -488,7 +497,8 @@ def plot_evolution_stats(
             q0_025 = []
             q0_975 = []
 
-            assert (len(evolution_stat[EvolutionCase.SUCCESS]) == len(evolution_stat[EvolutionCase.FAILURE]))
+            assert (len(evolution_stat[EvolutionCase.SUCCESS]) == len(
+                evolution_stat[EvolutionCase.FAILURE]))
             for step in range(len(evolution_stat[EvolutionCase.SUCCESS])):
                 steps.append(step)
                 successes = evolution_stat[EvolutionCase.SUCCESS][step]
@@ -711,12 +721,11 @@ def plot_roi(
     return agent_roi_stats
 
 
-
 def verify_agents(env, number_of_users, agents):
     stat = {
         'Agent': [],
         '0.025': [],
-        '0.500' : [],
+        '0.500': [],
         '0.975': [],
     }
 
@@ -729,33 +738,32 @@ def verify_agents(env, number_of_users, agents):
         stat['0.025'].append(beta.ppf(0.025, successes + 1, failures + 1))
         stat['0.500'].append(beta.ppf(0.500, successes + 1, failures + 1))
         stat['0.975'].append(beta.ppf(0.975, successes + 1, failures + 1))
-        
+
     return pd.DataFrame().from_dict(stat)
-
-
 
 
 def evaluate_IPS(agent, reco_log):
     ee = []
     for u in range(max(reco_log.u)):
-        t = np.array(reco_log[reco_log['u']==u].t)
-        v = np.array(reco_log[reco_log['u']==u].v)
-        a = np.array(reco_log[reco_log['u']==u].a)
-        c = np.array(reco_log[reco_log['u']==u].c)
-        z = list(reco_log[reco_log['u']==u].z)
-        ps = np.array(reco_log[reco_log['u']==u].ps)
+        t = np.array(reco_log[reco_log['u'] == u].t)
+        v = np.array(reco_log[reco_log['u'] == u].v)
+        a = np.array(reco_log[reco_log['u'] == u].a)
+        c = np.array(reco_log[reco_log['u'] == u].c)
+        z = list(reco_log[reco_log['u'] == u].z)
+        ps = np.array(reco_log[reco_log['u'] == u].ps)
 
-        jj=0
-        
+        jj = 0
+
         session = OrganicSessions()
         agent.reset()
         while True:
             if jj >= len(z):
                 break
             if z[jj] == 'organic':
-                session.next(DefaultContext(t[jj],u), int(v[jj]))
+                session.next(DefaultContext(t[jj], u), int(v[jj]))
             else:
-                prob_policy = agent.act(Observation(DefaultContext(t[jj],u), session), 0, False)['ps-a']
+                prob_policy = agent.act(Observation(DefaultContext(t[jj], u), session), 0, False)[
+                    'ps-a']
                 ee.append(c[jj] * prob_policy[int(a[jj])] / ps[jj])
                 session = OrganicSessions()
             jj += 1
@@ -766,53 +774,56 @@ def evaluate_SNIPS(agent, reco_log):
     rewards = []
     p_ratio = []
     for u in range(max(reco_log.u)):
-        t = np.array(reco_log[reco_log['u']==u].t)
-        v = np.array(reco_log[reco_log['u']==u].v)
-        a = np.array(reco_log[reco_log['u']==u].a)
-        c = np.array(reco_log[reco_log['u']==u].c)
-        z = list(reco_log[reco_log['u']==u].z)
-        ps = np.array(reco_log[reco_log['u']==u].ps)
+        t = np.array(reco_log[reco_log['u'] == u].t)
+        v = np.array(reco_log[reco_log['u'] == u].v)
+        a = np.array(reco_log[reco_log['u'] == u].a)
+        c = np.array(reco_log[reco_log['u'] == u].c)
+        z = list(reco_log[reco_log['u'] == u].z)
+        ps = np.array(reco_log[reco_log['u'] == u].ps)
 
-        jj=0
-        
+        jj = 0
+
         session = OrganicSessions()
         agent.reset()
         while True:
             if jj >= len(z):
                 break
             if z[jj] == 'organic':
-                session.next(DefaultContext(t[jj],u), int(v[jj]))
+                session.next(DefaultContext(t[jj], u), int(v[jj]))
             else:
-                prob_policy = agent.act(Observation(DefaultContext(t[jj],u), session), 0, False)['ps-a']
+                prob_policy = agent.act(Observation(DefaultContext(t[jj], u), session), 0, False)[
+                    'ps-a']
                 rewards.append(c[jj])
                 p_ratio.append(prob_policy[int(a[jj])] / ps[jj])
                 session = OrganicSessions()
             jj += 1
     return rewards, p_ratio
 
+
 def verify_agents_IPS(reco_log, agents):
     stat = {
         'Agent': [],
         '0.025': [],
-        '0.500' : [],
+        '0.500': [],
         '0.975': [],
     }
 
     for agent_id in agents:
         ee = evaluate_IPS(agents[agent_id], reco_log)
         mean_ee = np.mean(ee)
-        se_ee = np.std(ee)/np.sqrt(len(ee))
+        se_ee = np.std(ee) / np.sqrt(len(ee))
         stat['Agent'].append(agent_id)
-        stat['0.025'].append(mean_ee - 2*se_ee)
+        stat['0.025'].append(mean_ee - 2 * se_ee)
         stat['0.500'].append(mean_ee)
-        stat['0.975'].append(mean_ee + 2*se_ee)
+        stat['0.975'].append(mean_ee + 2 * se_ee)
     return pd.DataFrame().from_dict(stat)
+
 
 def verify_agents_SNIPS(reco_log, agents):
     stat = {
         'Agent': [],
         '0.025': [],
-        '0.500' : [],
+        '0.500': [],
         '0.975': [],
     }
 
@@ -820,44 +831,46 @@ def verify_agents_SNIPS(reco_log, agents):
         rewards, p_ratio = evaluate_SNIPS(agents[agent_id], reco_log)
         ee = np.asarray(rewards) * np.asarray(p_ratio)
         mean_ee = np.sum(ee) / np.sum(p_ratio)
-        se_ee = np.std(ee)/np.sqrt(len(ee))
+        se_ee = np.std(ee) / np.sqrt(len(ee))
         stat['Agent'].append(agent_id)
-        stat['0.025'].append(mean_ee - 2*se_ee)
+        stat['0.025'].append(mean_ee - 2 * se_ee)
         stat['0.500'].append(mean_ee)
-        stat['0.975'].append(mean_ee + 2*se_ee)
+        stat['0.975'].append(mean_ee + 2 * se_ee)
     return pd.DataFrame().from_dict(stat)
+
 
 def evaluate_recall_at_k(agent, reco_log, k = 5):
     hits = []
     for u in range(max(reco_log.u)):
-        t = np.array(reco_log[reco_log['u']==u].t)
-        v = np.array(reco_log[reco_log['u']==u].v)
-        a = np.array(reco_log[reco_log['u']==u].a)
-        c = np.array(reco_log[reco_log['u']==u].c)
-        z = list(reco_log[reco_log['u']==u].z)
-        ps = np.array(reco_log[reco_log['u']==u].ps)
+        t = np.array(reco_log[reco_log['u'] == u].t)
+        v = np.array(reco_log[reco_log['u'] == u].v)
+        a = np.array(reco_log[reco_log['u'] == u].a)
+        c = np.array(reco_log[reco_log['u'] == u].c)
+        z = list(reco_log[reco_log['u'] == u].z)
+        ps = np.array(reco_log[reco_log['u'] == u].ps)
 
-        jj=0
-        
+        jj = 0
+
         session = OrganicSessions()
         agent.reset()
         while True:
             if jj >= len(z):
                 break
             if z[jj] == 'organic':
-                session.next(DefaultContext(t[jj],u), int(v[jj]))
+                session.next(DefaultContext(t[jj], u), int(v[jj]))
             else:
-                prob_policy = agent.act(Observation(DefaultContext(t[jj],u), session), 0, False)['ps-a']
+                prob_policy = agent.act(Observation(DefaultContext(t[jj], u), session), 0, False)[
+                    'ps-a']
                 # Does the next session exist?
                 if (jj + 1) < len(z):
                     # Is the next session organic?
-                    if z[jj+1] == 'organic':
+                    if z[jj + 1] == 'organic':
                         # Whas there no click for this bandit event?
                         if not c[jj]:
                             # Generate a top-K from the probability distribution over all actions
                             top_k = set(np.argpartition(prob_policy, -k)[-k:])
                             # Is the next seen item in the top-K?
-                            if v[jj+1] in top_k:
+                            if v[jj + 1] in top_k:
                                 hits.append(1)
                             else:
                                 hits.append(0)
@@ -865,23 +878,25 @@ def evaluate_recall_at_k(agent, reco_log, k = 5):
             jj += 1
     return hits
 
+
 def verify_agents_recall_at_k(reco_log, agents, k = 5):
     stat = {
         'Agent': [],
         '0.025': [],
-        '0.500' : [],
+        '0.500': [],
         '0.975': [],
     }
 
     for agent_id in agents:
         hits = evaluate_recall_at_k(agents[agent_id], reco_log, k = k)
         mean_hits = np.mean(hits)
-        se_hits = np.std(hits)/np.sqrt(len(hits))
+        se_hits = np.std(hits) / np.sqrt(len(hits))
         stat['Agent'].append(agent_id)
-        stat['0.025'].append(mean_hits - 2*se_hits)
+        stat['0.025'].append(mean_hits - 2 * se_hits)
         stat['0.500'].append(mean_hits)
-        stat['0.975'].append(mean_hits + 2*se_hits)
+        stat['0.975'].append(mean_hits + 2 * se_hits)
     return pd.DataFrame().from_dict(stat)
+
 
 def plot_verify_agents(result):
     fig, ax = plt.subplots()
@@ -892,5 +907,5 @@ def plot_verify_agents(result):
                          result['0.975'] - result['0.500']),
                  fmt = 'o',
                  capsize = 4)
-    plt.xticks(result['Agent'], result['Agent'], rotation='vertical')
+    plt.xticks(result['Agent'], result['Agent'], rotation = 'vertical')
     return fig
