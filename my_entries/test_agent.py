@@ -50,4 +50,3 @@ class TestAgent(Agent):
             self.last_product_viewed = observation.sessions()[-1]['v']
 
 
-agent = build_agent_init('MyEntry', Entry, {**entry_args})
