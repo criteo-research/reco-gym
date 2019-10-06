@@ -1,6 +1,6 @@
 import numpy as np
-from torch.autograd import Variable
 from torch.nn import functional as F
+import torch.sparse
 
 from recogym import Configuration
 from recogym.agents import (
@@ -18,14 +18,15 @@ pytorch_mlr_args = {
     'variance_penalisation_strength': .0,
     'clip_weights': False,
     'alpha': .0,
-    'll_IPS': True
+    'll_IPS': True,
+    'with_ps_all': False,
 }
 
-from numba import jit
-from tqdm import tqdm
+from numba import njit
+from tqdm import trange
 
 
-@jit(nopython = True)
+@njit(nogil = True)
 def act_linear_model(X, W, P):
     return np.argmax(X.dot(W.T).reshape(P))
 
@@ -41,10 +42,6 @@ class PyTorchMLRModelBuilder(AbstractFeatureProvider):
 
             def __init__(self, config):
                 super(PyTorchMLRFeaturesProvider, self).__init__(config)
-
-            def features(self, observation):
-                base_features = super().features(observation)
-                return base_features.reshape(1, self.config.num_products)
 
         class PyTorchMLRModel(Model):
             """
@@ -66,21 +63,25 @@ class PyTorchMLRModelBuilder(AbstractFeatureProvider):
                 # ps_all[action] = 1.0
                 # /OWN CODE
                 # NUMBA CODE
-                P = features.shape[1]
-                X = features.astype(np.float32)
-                action = act_linear_model(X, self.W, P)
-                ps_all = np.zeros(P)
-                ps_all[action] = 1.0
-                # /NUMBA CODE
+                with torch.no_grad():
+                    P = features.shape[1]
+                    X = features.astype(np.float32).todense()
+                    action = act_linear_model(X, self.W, P)
+                    if self.config.with_ps_all:
+                        ps_all = np.zeros(P)
+                        ps_all[action] = 1.0
+                    else:
+                        ps_all = ()
+                    # /NUMBA CODE
 
-                return {
-                    **super().act(observation, features),
-                    **{
-                        'a': action,
-                        'ps': 1.0,
-                        'ps-a': ps_all,
-                    },
-                }
+                    return {
+                        **super().act(observation, features),
+                        **{
+                            'a': action,
+                            'ps': 1.0,
+                            'ps-a': ps_all,
+                        },
+                    }
 
         class MultinomialLogisticRegressionModel(torch.nn.Module):
             def __init__(self, input_dim, output_dim):
@@ -109,12 +110,13 @@ class PyTorchMLRModelBuilder(AbstractFeatureProvider):
 
             def pairwise_dot(self, x, a):
                 # Not just .matmul - compute pairwise dotproduct for action/context pairs
-                return (x * a).sum(dim = 1)
+                return torch.sum(x * a, dim = 1)
 
             def forward(self, x, a):
                 # Compute linear transformation x.A.T
-                return torch.sigmoid(self.pairwise_dot(x, self.weight[a,
-                                                          :]) + self.bias)  # Bias is experimental TODO
+                return torch.sigmoid(
+                    self.pairwise_dot(x, self.weight[a, :]) + self.bias
+                )  # Bias is experimental TODO
 
         # Get data
         features, actions, deltas, pss = self.train_data()
@@ -141,15 +143,33 @@ class PyTorchMLRModelBuilder(AbstractFeatureProvider):
             print('Clipping with constant M:\t{0}'.format(M))
 
         # Convert data to torch objects - only clicks for learning multinomial model
-        X1 = Variable(torch.Tensor(X[y != 0]))
-        A1 = Variable(torch.LongTensor(A[y != 0]))
-        w1 = torch.Tensor(pss[y != 0] ** -1)
+        X_filtered = X[y != 0].tocoo()
+        X1 = torch.sparse_coo_tensor(
+            indices = torch.tensor([X_filtered.row, X_filtered.col]),
+            values = torch.tensor(X_filtered.data),
+            size = X_filtered.shape,
+            dtype = torch.float32
+        ).to_dense()
+        A1 = torch.LongTensor(A[y != 0])
+        w1 = torch.tensor(
+            pss[y != 0] ** -1,
+            dtype = torch.float32
+        )
 
         # Convert data to torch objects - all samples for learning binomial model
-        X = Variable(torch.Tensor(X))
-        A = Variable(torch.LongTensor(A))
-        w = torch.Tensor(pss ** -1)
-        y = Variable(torch.Tensor(y))
+        X_all = X.tocoo()
+        X = torch.sparse_coo_tensor(
+            indices = torch.tensor([X_all.row, X_all.col]),
+            values = torch.tensor(X_all.data),
+            size = X_all.shape,
+            dtype = torch.float32
+        ).to_dense()
+        A = torch.LongTensor(A)
+        w = torch.tensor(
+            pss ** -1,
+            dtype = torch.float32
+        )
+        y = torch.tensor(y, dtype = torch.float32)
 
         # Binary cross-entropy as objective for the binomial model
         binary_cross_entropy = torch.nn.BCELoss(reduction = 'none')
@@ -220,7 +240,7 @@ class PyTorchMLRModelBuilder(AbstractFeatureProvider):
         tol = 1e-10  # Magic number
         max_patience, patience = 20, 0
         # for epoch in tqdm(range(self.config.n_epochs)):
-        for epoch in tqdm(range(max_epoch)):
+        for _ in trange(max_epoch, desc = 'Train Epoch:'):
             # Optimisation step
             obj, _, _, _, _, _, _, _ = optimiser.step(
                 {'closure': closure, 'current_loss': last_obj, 'max_ls': 20})
@@ -303,9 +323,9 @@ def polyinterp(points, x_min_bound = None, x_max_bound = None, plot = False):
     x_max = np.max(points[:, 0])
 
     # compute bounds of interpolation area
-    if (x_min_bound is None):
+    if x_min_bound is None:
         x_min_bound = x_min
-    if (x_max_bound is None):
+    if x_max_bound is None:
         x_max_bound = x_max
 
     # explicit formula for quadratic interpolation
@@ -316,12 +336,12 @@ def polyinterp(points, x_min_bound = None, x_max_bound = None, plot = False):
         # if x1 = 0, then is given by:
         # x_min = - (g1*x2^2)/(2(f2 - f1 - g1*x2))
 
-        if (points[0, 0] == 0):
+        if points[0, 0] == 0:
             x_sol = -points[0, 2] * points[1, 0] ** 2 / (
-                        2 * (points[1, 1] - points[0, 1] - points[0, 2] * points[1, 0]))
+                    2 * (points[1, 1] - points[0, 1] - points[0, 2] * points[1, 0]))
         else:
             a = -(points[0, 1] - points[1, 1] - points[0, 2] * (points[0, 0] - points[1, 0])) / (
-                        points[0, 0] - points[1, 0]) ** 2
+                    points[0, 0] - points[1, 0]) ** 2
             x_sol = points[0, 0] - points[0, 2] / (2 * a)
 
         x_sol = np.minimum(np.maximum(x_min_bound, x_sol), x_max_bound)
@@ -333,11 +353,11 @@ def polyinterp(points, x_min_bound = None, x_max_bound = None, plot = False):
         # d2 = sqrt(d1^2 - g1*g2)
         # x_min = x2 - (x2 - x1)*((g2 + d2 - d1)/(g2 - g1 + 2*d2))
         d1 = points[0, 2] + points[1, 2] - 3 * (
-                    (points[0, 1] - points[1, 1]) / (points[0, 0] - points[1, 0]))
+                (points[0, 1] - points[1, 1]) / (points[0, 0] - points[1, 0]))
         d2 = np.sqrt(d1 ** 2 - points[0, 2] * points[1, 2])
         if np.isreal(d2):
             x_sol = points[1, 0] - (points[1, 0] - points[0, 0]) * (
-                        (points[1, 2] + d2 - d1) / (points[1, 2] - points[0, 2] + 2 * d2))
+                    (points[1, 2] + d2 - d1) / (points[1, 2] - points[0, 2] + 2 * d2))
             x_sol = np.minimum(np.maximum(x_min_bound, x_sol), x_max_bound)
         else:
             x_sol = (x_max_bound + x_min_bound) / 2
@@ -396,7 +416,7 @@ def polyinterp(points, x_min_bound = None, x_max_bound = None, plot = False):
                         x_sol = np.real(crit_pt)
                         f_min = np.real(F_cp)
 
-            if (plot):
+            if plot:
                 plt.figure()
                 x = np.arange(x_min_bound, x_max_bound, (x_max_bound - x_min_bound) / 10000)
                 f = np.polyval(coeff, x)
@@ -1074,7 +1094,7 @@ class LBFGS(Optimizer):
             while True:
 
                 # check if maximum number of line search steps have been reached
-                if (ls_step >= max_ls):
+                if ls_step >= max_ls:
                     if inplace:
                         self._add_update(-t, d)
                     else:
@@ -1090,14 +1110,14 @@ class LBFGS(Optimizer):
                     break
 
                 # print info if debugging
-                if (ls_debug):
+                if ls_debug:
                     print('LS Step: %d  t: %.8e  alpha: %.8e  beta: %.8e'
                           % (ls_step, t, alpha, beta))
                     print('Armijo:  F(x+td): %.8e  F-c1*t*g*d: %.8e  F(x): %.8e'
                           % (F_new, F_k + c1 * t * gtd, F_k))
 
                 # check Armijo condition
-                if (F_new > F_k + c1 * t * gtd):
+                if F_new > F_k + c1 * t * gtd:
 
                     # set upper bound
                     beta = t
@@ -1120,12 +1140,12 @@ class LBFGS(Optimizer):
                     gtd_new = g_new.dot(d)
 
                     # print info if debugging
-                    if (ls_debug):
+                    if ls_debug:
                         print('Wolfe: g(x+td)*d: %.8e  c2*g*d: %.8e  gtd: %.8e'
                               % (gtd_new, c2 * gtd, gtd))
 
                     # check curvature condition
-                    if (gtd_new < c2 * gtd):
+                    if gtd_new < c2 * gtd:
 
                         # set lower bound
                         alpha = t
@@ -1142,8 +1162,8 @@ class LBFGS(Optimizer):
                 # compute new steplength
 
                 # if first step or not interpolating, then bisect or multiply by factor
-                if (not interpolate or not is_legal(F_b)):
-                    if (beta == float('Inf')):
+                if not interpolate or not is_legal(F_b):
+                    if beta == float('Inf'):
                         t = eta * t
                     else:
                         t = (alpha + beta) / 2.0
@@ -1154,19 +1174,19 @@ class LBFGS(Optimizer):
                         np.array([[alpha, F_a.item(), g_a.item()], [beta, F_b.item(), g_b.item()]]))
 
                     # if values are too extreme, adjust t
-                    if (beta == float('Inf')):
-                        if (t > 2 * eta * t_prev):
+                    if beta == float('Inf'):
+                        if t > 2 * eta * t_prev:
                             t = 2 * eta * t_prev
-                        elif (t < eta * t_prev):
+                        elif t < eta * t_prev:
                             t = eta * t_prev
                     else:
-                        if (t < alpha + 0.2 * (beta - alpha)):
+                        if t < alpha + 0.2 * (beta - alpha):
                             t = alpha + 0.2 * (beta - alpha)
-                        elif (t > (beta - alpha) / 2.0):
+                        elif t > (beta - alpha) / 2.0:
                             t = (beta - alpha) / 2.0
 
                     # if we obtain nonsensical value from interpolation
-                    if (t <= 0):
+                    if t <= 0:
                         t = (beta - alpha) / 2.0
 
                 # update parameters
@@ -1321,12 +1341,12 @@ class FullBatchLBFGS(LBFGS):
         """
 
         # load options for damping and eps
-        if ('damping' not in options.keys()):
+        if 'damping' not in options.keys():
             damping = False
         else:
             damping = options['damping']
 
-        if ('eps' not in options.keys()):
+        if 'eps' not in options.keys():
             eps = 1e-2
         else:
             eps = options['eps']

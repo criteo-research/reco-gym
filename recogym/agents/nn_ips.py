@@ -21,6 +21,7 @@ nn_ips_args = {
     'num_epochs': 100,
     'num_hidden': 20,
     'lambda_val': 0.01,
+    'with_ps_all': False,
 }
 
 
@@ -115,11 +116,17 @@ class NnIpsModelBuilder(AbstractFeatureProvider):
                         np.array(self.config.num_products),
                         p = prob
                     )
-                    ps_all = prob
+                    if self.config.with_ps_all:
+                        ps_all = prob
+                    else:
+                        ps_all = ()
                 else:
                     action = torch.argmax(prob).item()
-                    ps_all = np.zeros(self.config.num_products)
-                    ps_all[action] = 1.0
+                    if self.config.with_ps_all:
+                        ps_all = np.zeros(self.config.num_products)
+                        ps_all[action] = 1.0
+                    else:
+                        ps_all = ()
                 return {
                     **super().act(observation, features),
                     **{

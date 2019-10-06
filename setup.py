@@ -11,7 +11,7 @@ README = (HERE / "README.md").read_text()
 # This call to setup() does all the work
 setup(
     name="recogym",
-    version="0.1.2.2",
+    version="0.1.2.3",
     description="Open-AI gym reinforcement learning environment for recommendation",
     long_description=README,
     long_description_content_type="text/markdown",
@@ -26,9 +26,8 @@ setup(
     packages=find_packages(exclude=("tests",)),
     include_package_data=True,
     install_requires=[
-        "numpy",
+        "intel-scipy",
         "pandas",
-        "scipy",
         "matplotlib",
         "scikit-learn",
         "simplegeneric",

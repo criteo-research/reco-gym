@@ -18,7 +18,8 @@ bayesian_poly_args = {
     'poly_degree': 2,
     'max_iter': 5000,
     'aa': 1.,
-    'bb': 1.
+    'bb': 1.,
+    'with_ps_all': False,
 }
 
 
@@ -54,8 +55,11 @@ class BayesianModelBuilder(AbstractFeatureProvider):
 
                 action_proba = expit(np.matmul(XA, self.Lambda.T)).mean(1)
                 action = np.argmax(action_proba)
-                ps_all = np.zeros(self.config.num_products)
-                ps_all[action] = 1.0
+                if self.config.with_ps_all:
+                    ps_all = np.zeros(self.config.num_products)
+                    ps_all[action] = 1.0
+                else:
+                    ps_all = ()
                 return {
                     **super().act(observation, features),
                     **{

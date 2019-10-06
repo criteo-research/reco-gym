@@ -1,9 +1,8 @@
-import multiprocessing
 import time
 from copy import deepcopy
-from multiprocessing import Pool
 
 from scipy.stats.distributions import beta
+from tqdm import trange
 
 from recogym import AgentStats
 
@@ -39,7 +38,7 @@ def _collect_stats(args):
     unique_user_id += num_organic_offline_users
 
     # Offline Training.
-    for u in range(num_offline_users):
+    for u in trange(num_offline_users, desc = 'Offline Users'):
         env.reset(unique_user_id + u)
         new_observation, _, done, _ = env.step(None)
         while not done:
@@ -52,7 +51,7 @@ def _collect_stats(args):
 
     # Online Testing.
     print(f"Start: Agent Testing #{epoch}")
-    for u in range(num_online_users):
+    for u in trange(num_online_users, desc = 'Online Users'):
         env.reset(unique_user_id + u)
         new_agent.reset()
         new_observation, _, done, _ = env.step(None)

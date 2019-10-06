@@ -13,6 +13,7 @@ organic_user_count_args = {
 
     # Weight History Function: how treat each event back in time.
     'weight_history_function': None,
+    'with_ps_all': False,
 }
 
 
@@ -33,16 +34,22 @@ class OrganicUserEventCounterModelBuilder(AbstractFeatureProvider):
                     self.rng = RandomState(self.config.random_seed)
 
             def act(self, observation, features):
-                action_proba = features / np.sum(features, axis = 0)
+                action_proba = np.array(features / np.sum(features)).flatten()
                 if self.config.select_randomly:
                     action = self.rng.choice(self.config.num_products, p = action_proba)
                     ps = action_proba[action]
-                    ps_all = action_proba
+                    if self.config.with_ps_all:
+                        ps_all = action_proba
+                    else:
+                        ps_all = ()
                 else:
                     action = np.argmax(action_proba)
                     ps = 1.0
-                    ps_all = np.zeros(self.config.num_products)
-                    ps_all[action] = 1.0
+                    if self.config.with_ps_all:
+                        ps_all = np.zeros(self.config.num_products)
+                        ps_all[action] = 1.0
+                    else:
+                        ps_all = ()
                 return {
                     **super().act(observation, features),
                     **{
@@ -53,7 +60,7 @@ class OrganicUserEventCounterModelBuilder(AbstractFeatureProvider):
                 }
 
         return (
-            ViewsFeaturesProvider(self.config),
+            ViewsFeaturesProvider(self.config, is_sparse = False),
             OrganicUserEventCounterModel(self.config)
         )
 

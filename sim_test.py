@@ -54,11 +54,13 @@ if __name__ == "__main__":
         if hasattr(tmp_module, 'TestAgent'):
             agent_class = tmp_module.TestAgent
             agent_configs = tmp_module.test_agent_args
+            agent_name = 'Test Agent'
         else:
             if hasattr(tmp_module, 'agent'):
                 for agent_key in tmp_module.agent.keys():
                     agent_class = tmp_module.agent[agent_key][AgentInit.CTOR]
                     agent_configs = tmp_module.agent[agent_key][AgentInit.DEF_ARGS]
+                    agent_name = agent_key
             else:
                 print('There is not Agent to test!')
                 continue
@@ -72,7 +74,8 @@ if __name__ == "__main__":
             log_epsilon,
             sigma_omega,
             agent_class,
-            agent_configs
+            agent_configs,
+            agent_name
         )
 
         df = df.join(pd.DataFrame({

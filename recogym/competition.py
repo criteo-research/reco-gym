@@ -22,7 +22,8 @@ def competition_score(
     log_epsilon: float,
     sigma_omega: float,
     agent_class,
-    agent_configs
+    agent_configs,
+    agent_name: str
 ):
     TrainingDataSamples = tuple([num_users_to_train])
     TestingDataSamples = num_users_to_score
@@ -55,7 +56,7 @@ def competition_score(
         },
         {
             **build_agent_init(
-                'Test Agent',
+                agent_name,
                 agent_class,
                 {
                     **agent_configs,

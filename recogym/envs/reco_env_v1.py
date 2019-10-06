@@ -1,14 +1,14 @@
 # Omega is the users latent representation of interests - vector of size K
 #     omega is initialised when you have new user with reset
 #     omega is updated at every timestep using timestep
-#   
+#
 # Gamma is the latent representation of organic products (matrix P by K)
 # softmax(Gamma omega) is the next item probabilities (organic)
 
 # Beta is the latent representation of response to actions (matrix P by K)
 # sigmoid(beta omega) is the ctr for each action
-
-from numpy import array, diag, exp, matmul, mod, sqrt
+import numpy as np
+from numba import njit
 from scipy.special import expit as sigmoid
 from .abstract import AbstractEnv, env_args, organic
 
@@ -29,10 +29,16 @@ env_1_args = {
 }
 
 
+@njit(nogil = True)
+def sig(x):
+    return 1.0 / (1.0 + np.exp(-x))
+
+
 # Maps behaviour into ctr - organic has real support ctr is on [0,1].
+@njit(nogil = True)
 def ff(xx, aa = 5, bb = 2, cc = 0.3, dd = 2, ee = 6):
     # Magic numbers give a reasonable ctr of around 2%.
-    return sigmoid(aa * sigmoid(bb * sigmoid(cc * xx) - dd) - ee)
+    return sig(aa * sig(bb * sig(cc * xx) - dd) - ee)
 
 
 # Environment definition.
@@ -40,11 +46,12 @@ class RecoEnv1(AbstractEnv):
 
     def __init__(self):
         super(RecoEnv1, self).__init__()
+        self.cached_state_seed = None
 
     def set_static_params(self):
         # Initialise the state transition matrix which is 3 by 3
         # high level transitions between organic, bandit and leave.
-        self.state_transition = array([
+        self.state_transition = np.array([
             [0, self.config.prob_organic_to_bandit, self.config.prob_leave_organic],
             [self.config.prob_bandit_to_organic, 0, self.config.prob_leave_organic],
             [0.0, 0.0, 1.]
@@ -61,7 +68,7 @@ class RecoEnv1(AbstractEnv):
         # Initialise mu_organic.
         self.mu_organic = self.rng.normal(
             0, self.config.sigma_mu_organic,
-            size = (self.config.num_products)
+            size = (self.config.num_products, 1)
         )
 
         # Initialise beta, mu_bandit for all products (Bandit).
@@ -76,6 +83,7 @@ class RecoEnv1(AbstractEnv):
 
     # Update user state to one of (organic, bandit, leave) and their omega (latent factor).
     def update_state(self):
+        old_state = self.state
         self.state = self.rng.choice(3, p = self.state_transition[self.state, :])
         assert (hasattr(self, 'time_generator'))
         old_time = self.current_time
@@ -89,12 +97,18 @@ class RecoEnv1(AbstractEnv):
                 self.omega,
                 self.config.sigma_omega * omega_k, size = (self.config.K, 1)
             )
+        self.context_switch = old_state != self.state
 
     # Sample a click as response to recommendation when user in bandit state
     # click ~ Bernoulli().
     def draw_click(self, recommendation):
         # Personalised CTR for every recommended product.
-        ctr = ff(matmul(self.beta, self.omega)[:, 0] + self.mu_bandit)
+        if self.config.change_omega_for_bandits or self.context_switch:
+            self.cached_state_seed = (
+                    self.beta @ self.omega + self.mu_bandit
+            ).ravel()
+        assert self.cached_state_seed is not None
+        ctr = ff(self.cached_state_seed)
         click = self.rng.choice(
             [0, 1],
             p = [1 - ctr[recommendation], ctr[recommendation]]
@@ -103,18 +117,18 @@ class RecoEnv1(AbstractEnv):
 
     # Sample the next organic product view.
     def update_product_view(self):
-        log_uprob = matmul(self.Gamma, self.omega)[:, 0] + self.mu_organic
+        log_uprob = (self.Gamma @ self.omega + self.mu_organic).ravel()
         log_uprob = log_uprob - max(log_uprob)
-        uprob = exp(log_uprob)
-        self.product_view = int(
+        uprob = np.exp(log_uprob)
+        self.product_view = np.int16(
             self.rng.choice(
                 self.config.num_products,
-                p = uprob / sum(uprob)
+                p = uprob / uprob.sum()
             )
         )
 
     def normalize_beta(self):
-        self.beta = self.beta / sqrt((self.beta**2).sum(1)[:,None])
+        self.beta = self.beta / np.sqrt((self.beta**2).sum(1)[:, np.newaxis])
 
     def generate_beta(self, number_of_flips):
         """Create Beta by flipping Gamma, but flips are between similar items only"""
@@ -126,37 +140,35 @@ class RecoEnv1(AbstractEnv):
                 self.normalize_beta()
 
             return
-        P, K = self.Gamma.shape
-        index = list(range(P))
 
-        prod_cov = matmul(self.Gamma, self.Gamma.T)
-        prod_cov = prod_cov - diag(
-            diag(prod_cov))  # We are always most correlated with ourselves so remove the diagonal.
+        P, K = self.Gamma.shape
+        index = np.arange(P)
+
+        prod_cov = self.Gamma @ self.Gamma.T
+        # We are always most correlated with ourselves so remove the diagonal.
+        prod_cov = prod_cov - np.diag(np.diag(prod_cov))
 
         prod_cov_flat = prod_cov.flatten()
 
-        already_used = dict()
+        already_used = set()
         flips = 0
-        pcs = prod_cov_flat.argsort()[::-1]  # Find the most correlated entries
-        for ii, jj in [(int(p / P), mod(p, P)) for p in pcs]:  # Convert flat indexes to 2d indexes
+        for p in prod_cov_flat.argsort()[::-1]:  # Find the most correlated entries
+            # Convert flat indexes to 2d indexes
+            ii, jj = int(p / P), np.mod(p, P)
             # Do flips between the most correlated entries
             # provided neither the row or col were used before.
             if not (ii in already_used or jj in already_used):
                 index[ii] = jj  # Do a flip.
                 index[jj] = ii
-                already_used[ii] = True  # Mark as dirty.
-                already_used[jj] = True
+                already_used.add(ii)
+                already_used.add(jj)
                 flips += 1
 
                 if flips == number_of_flips:
-                    self.beta = self.Gamma[index, :]
-                    self.mu_bandit = self.mu_organic[index]
-                    if self.config.normalize_beta:
-                        self.normalize_beta()
-                    return
+                    break
 
         self.beta = self.Gamma[index, :]
-        self.mu_bandit = self.mu_organic[index]
+        self.mu_bandit = self.mu_organic[index, :]
 
         if self.config.normalize_beta:
             self.normalize_beta()

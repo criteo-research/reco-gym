@@ -17,6 +17,7 @@ logreg_multiclass_ips_args = {
     'poly_degree': 2,
     'solver': 'lbfgs',
     'max_iter': 5000,
+    'with_ps_all': False,
 }
 
 
@@ -66,12 +67,18 @@ class LogregMulticlassIpsModelBuilder(AbstractFeatureProvider):
                         p = action_proba
                     )
                     ps = action_proba[action]
-                    all_ps = action_proba
+                    if self.config.with_ps_all:
+                        all_ps = action_proba
+                    else:
+                        all_ps = ()
                 else:
                     action = self.logreg.predict(features).item()
                     ps = 1.0
-                    all_ps = np.zeros(self.config.num_products)
-                    all_ps[action] = 1.0
+                    if self.config.with_ps_all:
+                        all_ps = np.zeros(self.config.num_products)
+                        all_ps[action] = 1.0
+                    else:
+                        all_ps = ()
                 return {
                     **super().act(observation, features),
                     **{
