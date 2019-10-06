@@ -1,7 +1,7 @@
 import argparse
 import datetime
 import glob
-import imp
+import types
 import os
 
 import pandas as pd
@@ -46,7 +46,7 @@ if __name__ == "__main__":
     start = datetime.datetime.now()
 
     for agent_file in glob.glob(entries_dir + '/*.py'):
-        tmp_module = imp.new_module('tmp_module')
+        tmp_module = types.ModuleType('tmp_module')
         exec(
             open(agent_file).read(),
             tmp_module.__dict__
