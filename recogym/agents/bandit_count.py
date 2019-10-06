@@ -51,11 +51,15 @@ class BanditCount(Agent):
 
         if action is not None and reward is not None:
 
+            ix = self.last_product_viewed
+            jx = action['a']
             self.update_lpv(observation)
-            self.pulls_a[self.last_product_viewed, action['a']] += 1
-            self.clicks_a[self.last_product_viewed, action['a']] += reward
+            self.pulls_a[ix, jx] += 1
+            self.clicks_a[ix, jx] += reward
 
-            self.ctr = (self.clicks_a + 1) / (self.pulls_a + 2)
+            self.ctr[ix, jx] = (
+                    (self.clicks_a[ix, jx] + 1) / (self.pulls_a[ix, jx] + 2)
+            )
 
     def update_lpv(self, observation):
         """Updates the last product viewed based on the observation"""
