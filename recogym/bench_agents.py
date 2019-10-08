@@ -80,7 +80,7 @@ def test_agent(
         agent,
         num_offline_users = 1000,
         num_online_users = 100,
-        num_organic_offline_users = 100,
+        num_organic_offline_users = 0,
         num_epochs = 1,
         epoch_with_random_reset = False
 ):
