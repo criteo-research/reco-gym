@@ -38,7 +38,6 @@ class OrganicUserEventCounterModelBuilder(AbstractFeatureProvider):
                     self.rng = RandomState(self.config.random_seed)
 
             def act(self, observation, features):
-                # Experimental
                 features = [count + self.config.epsilon for count in features]
                 if not self.config.reverse_pop:
                     action_proba = features / np.sum(features, axis = 0)
