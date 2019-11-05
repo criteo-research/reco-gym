@@ -2,7 +2,7 @@ import numpy as np
 from numpy.random.mtrand import RandomState
 
 from recogym.agents import AbstractFeatureProvider, ViewsFeaturesProvider, Model, ModelBasedAgent
-from reco_gym import Configuration
+from recogym import Configuration
 
 organic_user_count_args = {
     'num_products': 10,
