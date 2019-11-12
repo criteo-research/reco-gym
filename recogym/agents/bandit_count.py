@@ -1,6 +1,6 @@
 import numpy as np
 
-from recogym import Configuration
+from ..envs.configuration import Configuration
 
 from .abstract import Agent
 

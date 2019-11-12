@@ -2,8 +2,8 @@ import numpy as np
 from torch.nn import functional as F
 import torch.sparse
 
-from recogym import Configuration
-from recogym.agents import (
+from ..envs.configuration import Configuration
+from .abstract import (
     AbstractFeatureProvider,
     Model,
     ModelBasedAgent,

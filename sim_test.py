@@ -1,8 +1,8 @@
 import argparse
 import datetime
 import glob
-import types
 import os
+import types
 
 import pandas as pd
 
@@ -13,23 +13,27 @@ from recogym import (
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--P', type = int, default = 100, help = 'Number of products')
-    parser.add_argument('--U', type = int, default = 100, help = 'Number of users to train on')
-    parser.add_argument('--Utest', type = int, default = 1000, help = 'Number of users to test')
-    parser.add_argument('--seed', type = int, default = 100, help = 'Seed')
-    parser.add_argument('--K', type = int, default = 20, help = 'Number of latent factors')
-    parser.add_argument('--F', type = int, default = 20,
-                        help = 'Number of flips, how different is bandit from organic')
-    parser.add_argument('--log_epsilon', type = float, default = 0.05,
-                        help = 'Pop logging policy epsilon')
-    parser.add_argument('--sigma_omega', type = float, default = 0.01, help = 'sigma_omega')
-    parser.add_argument('--entries_dir', type = str, default = 'my_entries',
-                        help = 'directory with agent files for a leaderboard of small baselines for P small try setting to leaderboard_entries')
+    parser.add_argument('--P', type=int, default=100, help='Number of products')
+    parser.add_argument('--UO', type=int, default=100, help='Number of organic users to train on')
+    parser.add_argument('--U', type=int, default=100, help='Number of users to train on')
+    parser.add_argument('--Utest', type=int, default=1000, help='Number of users to test')
+    parser.add_argument('--seed', type=int, default=100, help='Seed')
+    parser.add_argument('--K', type=int, default=20, help='Number of latent factors')
+    parser.add_argument('--F', type=int, default=20,
+                        help='Number of flips, how different is bandit from organic')
+    parser.add_argument('--log_epsilon', type=float, default=0.05,
+                        help='Pop logging policy epsilon')
+    parser.add_argument('--sigma_omega', type=float, default=0.01, help='sigma_omega')
+    parser.add_argument('--entries_dir', type=str, default='my_entries',
+                        help='directory with agent files for a leaderboard of small baselines for P small try setting to leaderboard_entries')
+    parser.add_argument('--with_cache', type=bool, default=False,
+                        help='Do use cache for training data or not')
 
     args = parser.parse_args()
 
-    P, U, Utest, seed, F, K, sigma_omega, log_epsilon, entries_dir = (
+    P, UO, U, Utest, seed, F, K, sigma_omega, log_epsilon, entries_dir, with_cache = (
         args.P,
+        args.UO,
         args.U,
         args.Utest,
         args.seed,
@@ -37,13 +41,15 @@ if __name__ == "__main__":
         args.K,
         args.sigma_omega,
         args.log_epsilon,
-        args.entries_dir
+        args.entries_dir,
+        args.with_cache,
     )
 
     print(args)
 
     adf = []
     start = datetime.datetime.now()
+    os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
     for agent_file in glob.glob(entries_dir + '/*.py'):
         tmp_module = types.ModuleType('tmp_module')
@@ -66,6 +72,7 @@ if __name__ == "__main__":
                 continue
         df = competition_score(
             P,
+            UO,
             U,
             Utest,
             seed,
@@ -75,7 +82,8 @@ if __name__ == "__main__":
             sigma_omega,
             agent_class,
             agent_configs,
-            agent_name
+            agent_name,
+            with_cache
         )
 
         df = df.join(pd.DataFrame({
@@ -93,5 +101,5 @@ if __name__ == "__main__":
     fp.close()
 
     leaderboard = pd.concat(adf)
-    leaderboard = leaderboard.sort_values(by = 'q0.500', ascending = False)
+    leaderboard = leaderboard.sort_values(by='q0.500', ascending=False)
     leaderboard.to_csv(out_dir + '/leaderboard.csv')

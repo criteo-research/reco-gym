@@ -3,8 +3,8 @@ from numba import njit
 from scipy import sparse
 from sklearn.linear_model import LogisticRegression
 
-from recogym import Configuration
-from recogym.agents import (AbstractFeatureProvider, Model, ModelBasedAgent, ViewsFeaturesProvider)
+from ..envs.configuration import Configuration
+from .abstract import (AbstractFeatureProvider, Model, ModelBasedAgent, ViewsFeaturesProvider)
 
 logreg_poly_args = {
     'num_products': 10,

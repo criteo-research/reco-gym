@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 
-from recogym import Configuration
+from ..envs.configuration import Configuration
 from .abstract import Agent
 
 # Default Arguments ----------------------------------------------------------

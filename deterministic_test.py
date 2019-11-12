@@ -1,19 +1,18 @@
-import gym
-
-from recogym import env_0_args, env_1_args, test_agent
 from copy import deepcopy
 
-from recogym import Configuration
+import gym
+import numpy as np
 
-from recogym.agents import BanditMFSquare, bandit_mf_square_args
+from recogym import Configuration
+from recogym import env_0_args, env_1_args, test_agent
 from recogym.agents import BanditCount, bandit_count_args
-from recogym.agents import RandomAgent, random_args
+from recogym.agents import BanditMFSquare, bandit_mf_square_args
 from recogym.agents import LogregMulticlassIpsAgent, logreg_multiclass_ips_args
+from recogym.agents import LogregPolyAgent, logreg_poly_args
 from recogym.agents import NnIpsAgent, nn_ips_args
 from recogym.agents import OrganicCount, organic_count_args
 from recogym.agents import OrganicUserEventCounterAgent, organic_user_count_args
-from recogym.agents import LogregPolyAgent, logreg_poly_args
-import numpy as np
+from recogym.agents import RandomAgent, random_args
 
 # Add a new environment here.
 env_test = {
@@ -68,13 +67,13 @@ organic_size = 5
 samples = 200  # Set a big value to train model based on classifications.
 
 
-def is_env_deterministic(env, users = 5):
+def is_env_deterministic(env, users=5):
     c_env = deepcopy(env)
-    logs_a = c_env.generate_logs(users)
+    logs_a = c_env.generate_logs(num_offline_users=users, num_organic_offline_users=users)
     c_env = deepcopy(env)
-    logs_b = c_env.generate_logs(users)
+    logs_b = c_env.generate_logs(num_offline_users=users, num_organic_offline_users=users)
     return np.mean(logs_a[~ np.isnan(logs_b.v)].v == logs_b[~ np.isnan(logs_b.v)].v) == 1.
-    #return logs_a.equals(logs_b) # this can return false.. it isn't clear why atm ... mostl likely types differ.. 
+    # return logs_a.equals(logs_b) # this can return false.. it isn't clear why atm ... most likely types differ..
 
 
 if __name__ == "__main__":

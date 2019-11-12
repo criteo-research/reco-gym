@@ -9,7 +9,7 @@
 # sigmoid(beta omega) is the ctr for each action
 import numpy as np
 from numba import njit
-from scipy.special import expit as sigmoid
+
 from .abstract import AbstractEnv, env_args, organic
 
 # Default arguments for toy environment ------------------------------------
@@ -29,14 +29,14 @@ env_1_args = {
 }
 
 
-@njit(nogil = True)
+@njit(nogil=True)
 def sig(x):
     return 1.0 / (1.0 + np.exp(-x))
 
 
 # Maps behaviour into ctr - organic has real support ctr is on [0,1].
-@njit(nogil = True)
-def ff(xx, aa = 5, bb = 2, cc = 0.3, dd = 2, ee = 6):
+@njit(nogil=True)
+def ff(xx, aa=5, bb=2, cc=0.3, dd=2, ee=6):
     # Magic numbers give a reasonable ctr of around 2%.
     return sig(aa * sig(bb * sig(cc * xx) - dd) - ee)
 
@@ -62,29 +62,29 @@ class RecoEnv1(AbstractEnv):
 
         # Initialise Gamma for all products (Organic).
         self.Gamma = self.rng.normal(
-            size = (self.config.num_products, self.config.K)
+            size=(self.config.num_products, self.config.K)
         )
 
         # Initialise mu_organic.
         self.mu_organic = self.rng.normal(
             0, self.config.sigma_mu_organic,
-            size = (self.config.num_products, 1)
+            size=(self.config.num_products, 1)
         )
 
         # Initialise beta, mu_bandit for all products (Bandit).
         self.generate_beta(self.config.number_of_flips)
 
     # Create a new user.
-    def reset(self, user_id = 0):
+    def reset(self, user_id=0):
         super().reset(user_id)
         self.omega = self.rng.normal(
-            0, self.config.sigma_omega_initial, size = (self.config.K, 1)
+            0, self.config.sigma_omega_initial, size=(self.config.K, 1)
         )
 
     # Update user state to one of (organic, bandit, leave) and their omega (latent factor).
     def update_state(self):
         old_state = self.state
-        self.state = self.rng.choice(3, p = self.state_transition[self.state, :])
+        self.state = self.rng.choice(3, p=self.state_transition[self.state, :])
         assert (hasattr(self, 'time_generator'))
         old_time = self.current_time
         self.current_time = self.time_generator.new_time()
@@ -95,7 +95,7 @@ class RecoEnv1(AbstractEnv):
         if self.config.change_omega_for_bandits or self.state == organic:
             self.omega = self.rng.normal(
                 self.omega,
-                self.config.sigma_omega * omega_k, size = (self.config.K, 1)
+                self.config.sigma_omega * omega_k, size=(self.config.K, 1)
             )
         self.context_switch = old_state != self.state
 
@@ -111,7 +111,7 @@ class RecoEnv1(AbstractEnv):
         ctr = ff(self.cached_state_seed)
         click = self.rng.choice(
             [0, 1],
-            p = [1 - ctr[recommendation], ctr[recommendation]]
+            p=[1 - ctr[recommendation], ctr[recommendation]]
         )
         return click
 
@@ -123,12 +123,12 @@ class RecoEnv1(AbstractEnv):
         self.product_view = np.int16(
             self.rng.choice(
                 self.config.num_products,
-                p = uprob / uprob.sum()
+                p=uprob / uprob.sum()
             )
         )
 
     def normalize_beta(self):
-        self.beta = self.beta / np.sqrt((self.beta**2).sum(1)[:, np.newaxis])
+        self.beta = self.beta / np.sqrt((self.beta ** 2).sum(1)[:, np.newaxis])
 
     def generate_beta(self, number_of_flips):
         """Create Beta by flipping Gamma, but flips are between similar items only"""

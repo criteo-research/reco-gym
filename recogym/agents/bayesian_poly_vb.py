@@ -1,14 +1,14 @@
 import numpy as np
 from scipy.special import expit
 
-from recogym import Configuration
-from recogym.agents import (
+from ..envs.configuration import Configuration
+from . import (
     AbstractFeatureProvider,
     Model,
     ModelBasedAgent,
     ViewsFeaturesProvider
 )
-from recogym.agents.organic_count import to_categorical
+from .organic_count import to_categorical
 
 bayesian_poly_args = {
     'num_products': 10,
