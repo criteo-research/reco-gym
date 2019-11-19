@@ -120,8 +120,8 @@ class SparsePolynomialFeatures:
 
 
 class LogregPolyModelBuilder(AbstractFeatureProvider):
-    def __init__(self, config):
-        super(LogregPolyModelBuilder, self).__init__(config)
+    def __init__(self, config, is_sparse=False):
+        super(LogregPolyModelBuilder, self).__init__(config, is_sparse=is_sparse)
 
     def build(self):
         class LogisticRegressionPolyFeaturesProvider(ViewsFeaturesProvider):
@@ -130,7 +130,7 @@ class LogregPolyModelBuilder(AbstractFeatureProvider):
             """
 
             def __init__(self, config, poly):
-                super(LogisticRegressionPolyFeaturesProvider, self).__init__(config)
+                super(LogisticRegressionPolyFeaturesProvider, self).__init__(config, is_sparse=True)
                 self.poly = poly
                 self.all_actions = np.arange(self.config.num_products)
 
@@ -202,5 +202,5 @@ class LogregPolyAgent(ModelBasedAgent):
     def __init__(self, config = Configuration(logreg_poly_args)):
         super(LogregPolyAgent, self).__init__(
             config,
-            LogregPolyModelBuilder(config)
+            LogregPolyModelBuilder(config, is_sparse=True)
         )

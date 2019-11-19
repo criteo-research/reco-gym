@@ -12,6 +12,11 @@ from recogym import (
 )
 
 if __name__ == "__main__":
+    import tensorflow as tf2
+    print(f'TensorFlow V2: {tf2.__version__}')
+    import tensorflow.compat.v1 as tf1
+    print(f'TensorFlow V2: {tf1.__version__}')
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--P', type=int, default=100, help='Number of products')
     parser.add_argument('--UO', type=int, default=100, help='Number of organic users to train on')
@@ -31,7 +36,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    P, UO, U, Utest, seed, F, K, sigma_omega, log_epsilon, entries_dir, with_cache = (
+    P, UO, U, Utest, seed, num_flips, K, sigma_omega, log_epsilon, entries_dir, with_cache = (
         args.P,
         args.UO,
         args.U,
@@ -52,47 +57,52 @@ if __name__ == "__main__":
     os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
     for agent_file in glob.glob(entries_dir + '/*.py'):
-        tmp_module = types.ModuleType('tmp_module')
-        exec(
-            open(agent_file).read(),
-            tmp_module.__dict__
-        )
-        if hasattr(tmp_module, 'TestAgent'):
-            agent_class = tmp_module.TestAgent
-            agent_configs = tmp_module.test_agent_args
-            agent_name = 'Test Agent'
-        else:
-            if hasattr(tmp_module, 'agent'):
-                for agent_key in tmp_module.agent.keys():
-                    agent_class = tmp_module.agent[agent_key][AgentInit.CTOR]
-                    agent_configs = tmp_module.agent[agent_key][AgentInit.DEF_ARGS]
-                    agent_name = agent_key
+        print(f'Agent: {agent_file}')
+        try:
+            tmp_module = types.ModuleType('tmp_module')
+            exec(
+                open(agent_file).read(),
+                tmp_module.__dict__
+            )
+            if hasattr(tmp_module, 'TestAgent'):
+                agent_class = tmp_module.TestAgent
+                agent_configs = tmp_module.test_agent_args
+                agent_name = 'Test Agent'
             else:
-                print('There is not Agent to test!')
-                continue
-        df = competition_score(
-            P,
-            UO,
-            U,
-            Utest,
-            seed,
-            K,
-            F,
-            log_epsilon,
-            sigma_omega,
-            agent_class,
-            agent_configs,
-            agent_name,
-            with_cache
-        )
+                if hasattr(tmp_module, 'agent'):
+                    for agent_key in tmp_module.agent.keys():
+                        agent_class = tmp_module.agent[agent_key][AgentInit.CTOR]
+                        agent_configs = tmp_module.agent[agent_key][AgentInit.DEF_ARGS]
+                        agent_name = agent_key
+                else:
+                    print('There is no Agent to test!')
+                    continue
 
-        df = df.join(pd.DataFrame({
-            'entry': [agent_file]
-        }))
+            df = competition_score(
+                P,
+                UO,
+                U,
+                Utest,
+                seed,
+                K,
+                num_flips,
+                log_epsilon,
+                sigma_omega,
+                agent_class,
+                agent_configs,
+                agent_name,
+                with_cache
+            )
 
-        print(df)
+            df = df.join(pd.DataFrame({
+                'entry': [agent_file]
+            }))
 
-        adf.append(df)
+            print(df)
+
+            adf.append(df)
+        except Exception as ex:
+            print(f'Agent @ "{agent_file}" failed: {str(ex)}')
 
     out_dir = entries_dir + '_' + str(P) + '_' + str(U) + '_' + str(Utest) + '_' + str(start)
     os.mkdir(out_dir)

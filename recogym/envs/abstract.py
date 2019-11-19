@@ -287,7 +287,7 @@ class AbstractEnv(gym.Env, ABC):
                 data['a'].append(action['a'])
                 data['c'].append(reward)
                 data['ps'].append(action['ps'])
-                data['ps-a'].append(action['ps-a'])
+                data['ps-a'].append(action['ps-a'] if 'ps-a' in action else ())
 
         unique_user_id = 0
         for _ in trange(num_organic_offline_users, desc='Organic Users'):

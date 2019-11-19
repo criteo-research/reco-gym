@@ -40,7 +40,7 @@ class LogregMulticlassIpsModelBuilder(AbstractFeatureProvider):
             """
 
             def __init__(self, config):
-                super(LogregMulticlassViewsFeaturesProvider, self).__init__(config)
+                super(LogregMulticlassViewsFeaturesProvider, self).__init__(config, is_sparse=True)
 
             def features(self, observation):
                 base_features = super().features(observation)

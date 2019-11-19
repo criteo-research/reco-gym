@@ -25,7 +25,7 @@ class Agent:
             'u': observation.context().user(),
         }
 
-    def train(self, observation, action, reward, done = False):
+    def train(self, observation, action, reward, done=False):
         """Use this function to update your model based on observation, action,
             reward tuples"""
         pass
@@ -183,20 +183,21 @@ class AbstractFeatureProvider(ModelBuilder):
     * Delta (rewards: 1 -- there was a Click; 0 -- there was no)
     """
 
-    def __init__(self, config):
+    def __init__(self, config, is_sparse=False):
         super(AbstractFeatureProvider, self).__init__(config)
+        self.is_sparse = is_sparse
 
     def train_data(self):
         data = pd.DataFrame().from_dict(self.data)
 
-        featuress = []
+        features = []
         actions = []
         pss = []
         deltas = []
 
         with_history = hasattr(self.config, 'weight_history_function')
 
-        for user_id in tqdm(data['u'].unique(), desc = 'Train Data'):
+        for user_id in tqdm(data['u'].unique(), desc='Train Data'):
             ix = 0
             ixs = []
             jxs = []
@@ -236,38 +237,43 @@ class AbstractFeatureProvider(ModelBuilder):
                     if with_history:
                         assert len(ixs) == len(jxs)
                         views = sparse.coo_matrix(
-                            (np.ones(len(ixs), dtype = np.int16), (ixs, jxs)),
-                            shape = (len(ixs), self.config.num_products),
-                            dtype = np.int16
+                            (np.ones(len(ixs), dtype=np.int16), (ixs, jxs)),
+                            shape=(len(ixs), self.config.num_products),
+                            dtype=np.int16
                         )
                         weights = self.config.weight_history_function(
                             time - np.array(history)
                         )
                         weighted_views = views.multiply(weights[:, np.newaxis])
-                        featuress.append(
+                        features.append(
                             sparse.coo_matrix(
-                                weighted_views.sum(axis = 0, dtype = np.float32),
-                                copy = False
+                                weighted_views.sum(axis=0, dtype=np.float32),
+                                copy=False
                             )
                         )
                     else:
                         views = sparse.coo_matrix(
                             (
-                                np.ones(len(jxs), dtype = np.int16),
+                                np.ones(len(jxs), dtype=np.int16),
                                 (np.zeros(len(jxs)), jxs)
                             ),
-                            shape = (1, self.config.num_products),
-                            dtype = np.int16
+                            shape=(1, self.config.num_products),
+                            dtype=np.int16
                         )
-                        featuress.append(views)
+                        features.append(views)
 
                     actions.append(action)
                     deltas.append(delta)
                     pss.append(ps)
 
+        out_features = sparse.vstack(features, format='csr')
         return (
-            sparse.vstack(featuress, format = 'csr'),
-            np.array(actions),
+            (
+                out_features
+                if self.is_sparse else
+                np.array(out_features.todense(), dtype=np.float)
+            ),
+            np.array(actions, dtype=np.int16),
             np.array(deltas),
             np.array(pss)
         )
@@ -289,7 +295,7 @@ class ModelBasedAgent(Agent):
         self.feature_provider = None
         self.model = None
 
-    def train(self, observation, action, reward, done = False):
+    def train(self, observation, action, reward, done=False):
         self.model_builder.train(observation, action, reward, done)
 
     def act(self, observation, reward, done):
@@ -328,13 +334,13 @@ class ViewsFeaturesProvider(FeatureProvider):
         * 4 --> 2
     """
 
-    def __init__(self, config, is_sparse = True):
+    def __init__(self, config, is_sparse=False):
         super(ViewsFeaturesProvider, self).__init__(config)
         self.is_sparse = is_sparse
         self.with_history = (
-            hasattr(self.config, 'weight_history_function')
-            and
-            self.config.weight_history_function is not None
+                hasattr(self.config, 'weight_history_function')
+                and
+                self.config.weight_history_function is not None
         )
         self.reset()
 
@@ -359,10 +365,14 @@ class ViewsFeaturesProvider(FeatureProvider):
                 time - np.array(self.history)
             )
             weighted_views = self._views().multiply(weights[:, np.newaxis])
-            return sparse.coo_matrix(
-                weighted_views.sum(axis = 0, dtype = np.float32),
-                copy = False
+            views = sparse.coo_matrix(
+                weighted_views.sum(axis=0, dtype=np.float32),
+                copy=False
             )
+            if self.is_sparse:
+                return views
+            else:
+                return np.array(views.todense())
         else:
             return self._views()
 
@@ -376,12 +386,12 @@ class ViewsFeaturesProvider(FeatureProvider):
             if self.is_sparse:
                 self.views = sparse.lil_matrix(
                     (1, self.config.num_products),
-                    dtype = np.int16
+                    dtype=np.int16
                 )
             else:
                 self.views = np.zeros(
                     (1, self.config.num_products),
-                    dtype = np.int16
+                    dtype=np.int16
                 )
 
     def _views(self):
@@ -389,11 +399,11 @@ class ViewsFeaturesProvider(FeatureProvider):
             assert len(self.ixs) == len(self.jxs)
             return sparse.coo_matrix(
                 (
-                    np.ones(len(self.ixs), dtype = np.int16),
+                    np.ones(len(self.ixs), dtype=np.int16),
                     (self.ixs, self.jxs)
                 ),
-                shape = (len(self.ixs), self.config.num_products),
-                dtype = np.int16
+                shape=(len(self.ixs), self.config.num_products),
+                dtype=np.int16
             )
         else:
             return self.views

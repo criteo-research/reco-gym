@@ -7,7 +7,6 @@ channels:
 dependencies:
   - notebook
   - matplotlib
-  - intelpython3_full
   - pandas
   - pytorch
   - rpy2

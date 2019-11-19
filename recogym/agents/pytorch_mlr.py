@@ -33,7 +33,7 @@ def act_linear_model(X, W, P):
 
 class PyTorchMLRModelBuilder(AbstractFeatureProvider):
     def __init__(self, config):
-        super(PyTorchMLRModelBuilder, self).__init__(config)
+        super(PyTorchMLRModelBuilder, self).__init__(config, is_sparse=True)
 
     def build(self):
         class PyTorchMLRFeaturesProvider(ViewsFeaturesProvider):
@@ -41,7 +41,7 @@ class PyTorchMLRModelBuilder(AbstractFeatureProvider):
             """
 
             def __init__(self, config):
-                super(PyTorchMLRFeaturesProvider, self).__init__(config)
+                super(PyTorchMLRFeaturesProvider, self).__init__(config, is_sparse=True)
 
         class PyTorchMLRModel(Model):
             """

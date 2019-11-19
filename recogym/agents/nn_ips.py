@@ -95,7 +95,7 @@ class NnIpsModelBuilder(AbstractFeatureProvider):
 
         class TorchFeatureProvider(ViewsFeaturesProvider):
             def __init__(self, config):
-                super(TorchFeatureProvider, self).__init__(config)
+                super(TorchFeatureProvider, self).__init__(config, is_sparse=True)
 
             def features(self, observation):
                 base_features = super().features(observation).reshape(1, self.config.num_products)
