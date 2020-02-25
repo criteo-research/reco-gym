@@ -20,6 +20,12 @@ organic_user_count_args = {
     'with_ps_all': False,
 }
 
+    # reverse popularity.
+    'reverse_pop': False,
+
+    # Epsilon to add to user state - if none-zero, this ensures the policy has support over all products
+    'epsilon': .0
+}
 
 class OrganicUserEventCounterModelBuilder(AbstractFeatureProvider):
     def __init__(self, config):
@@ -56,6 +62,7 @@ class OrganicUserEventCounterModelBuilder(AbstractFeatureProvider):
                     if self.config.reverse_pop:
                         action_proba = 1 - action_proba
                         action_proba = action_proba / np.sum(action_proba)
+
                 if self.config.select_randomly:
                     action = self.rng.choice(self.config.num_products, p=action_proba)
                     if self.config.exploit_explore:
