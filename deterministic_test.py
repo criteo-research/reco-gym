@@ -39,10 +39,6 @@ agent_test = {
         'select_randomly': True,
         'random_seed': RandomSeed,
     })),
-    'nn_ips': NnIpsAgent(Configuration({
-        **nn_ips_args,
-        'random_seed': RandomSeed,
-    })),
     'organic_counter': OrganicCount(Configuration(organic_count_args)),
     'organic_user_counter': OrganicUserEventCounterAgent(Configuration({
         **organic_user_count_args,
