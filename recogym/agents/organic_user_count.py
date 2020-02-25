@@ -39,8 +39,8 @@ class OrganicUserEventCounterModelBuilder(AbstractFeatureProvider):
 
             def __init__(self, config):
                 super(OrganicUserEventCounterModel, self).__init__(config)
-                if config.select_randomly:
-                    self.rng = RandomState(self.config.random_seed)
+                self.rng = RandomState(self.config.random_seed)
+
 
             def act(self, observation, features):
                 features = features.flatten()
