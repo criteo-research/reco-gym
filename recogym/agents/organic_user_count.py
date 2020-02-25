@@ -13,8 +13,13 @@ organic_user_count_args = {
 
     # Weight History Function: how treat each event back in time.
     'weight_history_function': None,
-}
 
+    # reverse popularity.
+    'reverse_pop': False,
+
+    # Epsilon to add to user state - if none-zero, this ensures the policy has support over all products
+    'epsilon': .0
+}
 
 class OrganicUserEventCounterModelBuilder(AbstractFeatureProvider):
     def __init__(self, config):
@@ -33,7 +38,12 @@ class OrganicUserEventCounterModelBuilder(AbstractFeatureProvider):
                     self.rng = RandomState(self.config.random_seed)
 
             def act(self, observation, features):
-                action_proba = features / np.sum(features, axis = 0)
+                features = [count + self.config.epsilon for count in features]
+                if not self.config.reverse_pop:
+                    action_proba = features / np.sum(features, axis = 0)
+                else:
+                    action_proba = 1 - features / np.sum(features, axis = 0)
+                    action_proba = action_proba/sum(action_proba)                    
                 if self.config.select_randomly:
                     action = self.rng.choice(self.config.num_products, p = action_proba)
                     ps = action_proba[action]
