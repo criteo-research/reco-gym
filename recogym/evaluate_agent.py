@@ -772,7 +772,9 @@ def evaluate_IPS(agent, reco_log):
             else:
                 prob_policy = agent.act(Observation(DefaultContext(t[jj], u), session), 0, False)[
                     'ps-a']
-                ee.append(c[jj] * prob_policy[int(a[jj])] / ps[jj])
+                
+                if prob_policy!=():
+                    ee.append(c[jj] * prob_policy[int(a[jj])] / ps[jj])
                 session = OrganicSessions()
             jj += 1
     return ee
