@@ -11,7 +11,7 @@ from recogym.agents import (
     ModelBasedAgent,
     ViewsFeaturesProvider
 )
-from recogym import Configuration
+from ..envs.configuration import Configuration
 
 pytorch_mlr_args = {
     'n_epochs': 30,

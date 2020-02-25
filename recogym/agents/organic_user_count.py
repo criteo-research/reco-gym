@@ -18,13 +18,12 @@ organic_user_count_args = {
     # Weight History Function: how treat each event back in time.
     'weight_history_function': None,
     'with_ps_all': False,
-}
 
     # reverse popularity.
     'reverse_pop': False,
 
     # Epsilon to add to user state - if none-zero, this ensures the policy has support over all products
-    'epsilon': .0
+    'epsilon': 0.
 }
 
 class OrganicUserEventCounterModelBuilder(AbstractFeatureProvider):
