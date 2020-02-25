@@ -3,17 +3,17 @@ channels:
   - pytorch
   - anaconda
   - defaults
+  - intel
 dependencies:
-  - notebook=5.6.0
-  - matplotlib=2.2.3
-  - numpy=1.15.1
-  - python=3.7.1
-  - pandas=0.23.4
-  - scipy=1.1.0
-  - pytorch=1.0
-  - rpy2=2.9.1
-  - scikit-learn=0.20.1
-  - simplegeneric=0.8.1
+  - notebook
+  - matplotlib
+  - pandas
+  - pytorch
+  - rpy2
   # - gym=X.Y.Z conda support is missing, use `pip install gym` instead
   - pip:
-    - torch==1.0
+    - gym
+    - absl-py
+    - numba
+    - tqdm
+    - datetime

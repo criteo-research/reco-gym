@@ -1,14 +1,14 @@
 import numpy as np
 from scipy.special import expit
 
-from recogym import Configuration
-from recogym.agents import (
+from ..envs.configuration import Configuration
+from . import (
     AbstractFeatureProvider,
     Model,
     ModelBasedAgent,
     ViewsFeaturesProvider
 )
-from recogym.agents.organic_count import to_categorical
+from .organic_count import to_categorical
 
 bayesian_poly_args = {
     'num_products': 10,
@@ -17,7 +17,8 @@ bayesian_poly_args = {
     'poly_degree': 2,
     'max_iter': 5000,
     'aa': 1.,
-    'bb': 1.
+    'bb': 1.,
+    'with_ps_all': False,
 }
 
 from scipy import rand
@@ -75,8 +76,11 @@ class BayesianModelBuilderVB(AbstractFeatureProvider):
 
                 action_proba = expit(np.matmul(XA, self.Lambda.T)).mean(1)
                 action = np.argmax(action_proba)
-                ps_all = np.zeros(self.config.num_products)
-                ps_all[action] = 1.0
+                if self.config.with_ps_all:
+                    ps_all = np.zeros(self.config.num_products)
+                    ps_all[action] = 1.0
+                else:
+                    ps_all = ()
                 return {
                     **super().act(observation, features),
                     **{

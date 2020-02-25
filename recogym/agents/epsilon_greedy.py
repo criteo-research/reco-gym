@@ -14,6 +14,7 @@ epsilon_greedy_args = {
 
     # Try to select the worse case in epsilon-case.
     'epsilon_select_worse': False,
+    'with_ps_all': False,
 }
 
 
@@ -48,7 +49,11 @@ class EpsilonGreedy(Agent):
                 **{
                     'a': epsilon_action,
                     'ps': self.config.epsilon * product_probas[epsilon_action],
-                    'ps-a': self.config.epsilon * product_probas,
+                    'ps-a': (
+                            self.config.epsilon * product_probas
+                            if self.config.with_ps_all else
+                            ()
+                    ),
                     'greedy': False,
                     'h0': greedy_action['a']
                 }
@@ -58,7 +63,11 @@ class EpsilonGreedy(Agent):
                 **greedy_action,
                 'greedy': True,
                 'ps': (1.0 - self.config.epsilon) * greedy_action['ps'],
-                'ps-a': (1.0 - self.config.epsilon) * greedy_action['ps-a'],
+                'ps-a': (
+                    (1.0 - self.config.epsilon) * greedy_action['ps-a']
+                    if self.config.with_ps_all else
+                    ()
+                ),
             }
 
     def reset(self):

@@ -1,6 +1,9 @@
+import math
+
 import numpy as np
 import pandas as pd
-import math
+import scipy.sparse as sparse
+from tqdm import tqdm
 
 
 class Agent:
@@ -22,7 +25,7 @@ class Agent:
             'u': observation.context().user(),
         }
 
-    def train(self, observation, action, reward, done = False):
+    def train(self, observation, action, reward, done=False):
         """Use this function to update your model based on observation, action,
             reward tuples"""
         pass
@@ -180,8 +183,9 @@ class AbstractFeatureProvider(ModelBuilder):
     * Delta (rewards: 1 -- there was a Click; 0 -- there was no)
     """
 
-    def __init__(self, config):
+    def __init__(self, config, is_sparse=False):
         super(AbstractFeatureProvider, self).__init__(config)
+        self.is_sparse = is_sparse
 
     def train_data(self):
         data = pd.DataFrame().from_dict(self.data)
@@ -191,9 +195,17 @@ class AbstractFeatureProvider(ModelBuilder):
         pss = []
         deltas = []
 
-        for user_id in data['u'].unique():
-            views = np.zeros((0, self.config.num_products))
-            history = np.zeros((0, 1))
+        with_history = hasattr(self.config, 'weight_history_function')
+
+        for user_id in tqdm(data['u'].unique(), desc='Train Data'):
+            ix = 0
+            ixs = []
+            jxs = []
+            if with_history:
+                history = []
+
+            assert data[data['u'] == user_id].shape[0] <= np.iinfo(np.int16).max
+
             for _, user_datum in data[data['u'] == user_id].iterrows():
                 assert (not math.isnan(user_datum['t']))
                 if user_datum['z'] == 'organic':
@@ -201,41 +213,67 @@ class AbstractFeatureProvider(ModelBuilder):
                     assert (math.isnan(user_datum['c']))
                     assert (not math.isnan(user_datum['v']))
 
-                    view = int(user_datum['v'])
+                    view = np.int16(user_datum['v'])
 
-                    tmp_view = np.zeros(self.config.num_products)
-                    tmp_view[view] = 1
+                    if with_history:
+                        ixs.append(np.int16(ix))
+                        jxs.append(view)
 
-                    # Append the latest view at the beginning of all views.
-                    views = np.append(tmp_view[np.newaxis, :], views, axis = 0)
-                    history = np.append(np.array([user_datum['t']])[np.newaxis, :], history, axis = 0)
+                        history.append(np.int16(user_datum['t']))
+                        ix += 1
+                    else:
+                        jxs.append(view)
                 else:
                     assert (user_datum['z'] == 'bandit')
                     assert (not math.isnan(user_datum['a']))
                     assert (not math.isnan(user_datum['c']))
                     assert (math.isnan(user_datum['v']))
 
-                    action = int(user_datum['a'])
-                    delta = int(user_datum['c'])
+                    action = np.int16(user_datum['a'])
+                    delta = np.int16(user_datum['c'])
                     ps = user_datum['ps']
-                    time = user_datum['t']
+                    time = np.int16(user_datum['t'])
 
-                    if hasattr(self.config, 'weight_history_function'):
-                        weights = self.config.weight_history_function(time - history)
-                        train_views = views * weights
+                    if with_history:
+                        assert len(ixs) == len(jxs)
+                        views = sparse.coo_matrix(
+                            (np.ones(len(ixs), dtype=np.int16), (ixs, jxs)),
+                            shape=(len(ixs), self.config.num_products),
+                            dtype=np.int16
+                        )
+                        weights = self.config.weight_history_function(
+                            time - np.array(history)
+                        )
+                        weighted_views = views.multiply(weights[:, np.newaxis])
+                        features.append(
+                            sparse.coo_matrix(
+                                weighted_views.sum(axis=0, dtype=np.float32),
+                                copy=False
+                            )
+                        )
                     else:
-                        train_views = views
+                        views = sparse.coo_matrix(
+                            (
+                                np.ones(len(jxs), dtype=np.int16),
+                                (np.zeros(len(jxs)), jxs)
+                            ),
+                            shape=(1, self.config.num_products),
+                            dtype=np.int16
+                        )
+                        features.append(views)
 
-                    feature = np.sum(train_views, axis = 0)
-
-                    features.append(feature)
                     actions.append(action)
                     deltas.append(delta)
                     pss.append(ps)
 
+        out_features = sparse.vstack(features, format='csr')
         return (
-            np.array(features),
-            np.array(actions),
+            (
+                out_features
+                if self.is_sparse else
+                np.array(out_features.todense(), dtype=np.float)
+            ),
+            np.array(actions, dtype=np.int16),
             np.array(deltas),
             np.array(pss)
         )
@@ -257,7 +295,7 @@ class ModelBasedAgent(Agent):
         self.feature_provider = None
         self.model = None
 
-    def train(self, observation, action, reward, done = False):
+    def train(self, observation, action, reward, done=False):
         self.model_builder.train(observation, action, reward, done)
 
     def act(self, observation, reward, done):
@@ -296,32 +334,76 @@ class ViewsFeaturesProvider(FeatureProvider):
         * 4 --> 2
     """
 
-    def __init__(self, config):
+    def __init__(self, config, is_sparse=False):
         super(ViewsFeaturesProvider, self).__init__(config)
-        self.history = None
-        self.views = None
+        self.is_sparse = is_sparse
+        self.with_history = (
+                hasattr(self.config, 'weight_history_function')
+                and
+                self.config.weight_history_function is not None
+        )
         self.reset()
 
     def observe(self, observation):
         assert (observation is not None)
         assert (observation.sessions() is not None)
         for session in observation.sessions():
-            view = np.zeros((1, self.config.num_products))
-            view[:, session['v']] = 1
-            self.views = np.append(view, self.views, axis = 0)
-            self.history = np.append(np.array([session['t']])[np.newaxis, :], self.history, axis = 0)
+            view = np.int16(session['v'])
+            if self.with_history:
+                self.ixs.append(np.int16(self.ix))
+                self.jxs.append(view)
+                self.history.append(np.int16(session['t']))
+                self.ix += 1
+            else:
+                self.views[0, view] += 1
 
     def features(self, observation):
-        if (
-                hasattr(self.config, 'weight_history_function')
-                and self.config.weight_history_function is not None
-        ):
-            time = observation.context().time()
-            weights = self.config.weight_history_function(time - self.history)
-            return np.sum(self.views * weights, axis = 0)
+        if self.with_history:
+            time = np.int16(observation.context().time())
+
+            weights = self.config.weight_history_function(
+                time - np.array(self.history)
+            )
+            weighted_views = self._views().multiply(weights[:, np.newaxis])
+            views = sparse.coo_matrix(
+                weighted_views.sum(axis=0, dtype=np.float32),
+                copy=False
+            )
+            if self.is_sparse:
+                return views
+            else:
+                return np.array(views.todense())
         else:
-            return np.sum(self.views, axis = 0)
+            return self._views()
 
     def reset(self):
-        self.views = np.zeros((0, self.config.num_products))
-        self.history = np.zeros((0, 1))
+        if self.with_history:
+            self.ix = 0
+            self.ixs = []
+            self.jxs = []
+            self.history = []
+        else:
+            if self.is_sparse:
+                self.views = sparse.lil_matrix(
+                    (1, self.config.num_products),
+                    dtype=np.int16
+                )
+            else:
+                self.views = np.zeros(
+                    (1, self.config.num_products),
+                    dtype=np.int16
+                )
+
+    def _views(self):
+        if self.with_history:
+            assert len(self.ixs) == len(self.jxs)
+            return sparse.coo_matrix(
+                (
+                    np.ones(len(self.ixs), dtype=np.int16),
+                    (self.ixs, self.jxs)
+                ),
+                shape=(len(self.ixs), self.config.num_products),
+                dtype=np.int16
+            )
+        else:
+            return self.views

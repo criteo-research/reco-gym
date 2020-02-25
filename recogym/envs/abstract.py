@@ -1,19 +1,19 @@
 from abc import ABC
 
 import gym
-import pandas as pd
 import numpy as np
-
+import pandas as pd
+from gym.spaces import Discrete
 from numpy.random.mtrand import RandomState
 from scipy.special import expit as sigmoid
-from gym.spaces import Discrete
+from tqdm import trange
 
-from .session import OrganicSessions
-from .context import DefaultContext
 from .configuration import Configuration
-from .observation import Observation
-
+from .context import DefaultContext
 from .features.time import DefaultTimeGenerator
+from .observation import Observation
+from .session import OrganicSessions
+from ..agents import Agent
 
 # Arguments shared between all environments.
 
@@ -26,12 +26,13 @@ env_args = {
     'prob_leave_organic': 0.01,
     'prob_bandit_to_organic': 0.05,
     'prob_organic_to_bandit': 0.25,
-    'normalize_beta': False 
+    'normalize_beta': False,
+    'with_ps_all': False
 }
 
 
 # Static function for squashing values between 0 and 1.
-def f(mat, offset = 5):
+def f(mat, offset=5):
     """Monotonic increasing function as described in toy.pdf."""
     return sigmoid(mat - offset)
 
@@ -55,7 +56,7 @@ class AbstractEnv(gym.Env, ABC):
         self.current_time = None
         self.empty_sessions = OrganicSessions()
 
-    def reset_random_seed(self, epoch = 0):
+    def reset_random_seed(self, epoch=0):
         # Initialize Random State.
         assert (self.config.random_seed is not None)
         self.rng = RandomState(self.config.random_seed + epoch)
@@ -86,7 +87,7 @@ class AbstractEnv(gym.Env, ABC):
         # Set random seed for second time, ensures multiple epochs possible.
         self.reset_random_seed()
 
-    def reset(self, user_id = 0):
+    def reset(self, user_id=0):
         # Current state.
         self.first_step = True
         self.state = organic  # Manually set first state as Organic.
@@ -166,7 +167,7 @@ class AbstractEnv(gym.Env, ABC):
                     sessions
                 ),
                 None,
-                None,
+                self.state == stop,
                 info
             )
 
@@ -177,7 +178,7 @@ class AbstractEnv(gym.Env, ABC):
         self.update_state()
 
         if reward == 1:
-            self.state = organic  # Clicks are followed by Organic.
+            self.state = organic  # After a click, Organic Events always follow.
 
         # Markov state dependent logic.
         if self.state == organic:
@@ -185,16 +186,13 @@ class AbstractEnv(gym.Env, ABC):
         else:
             sessions = self.empty_sessions
 
-        # Update done flag.
-        done = True if self.state == stop else False
-
         return (
             Observation(
                 DefaultContext(self.current_time, self.current_user_id),
                 sessions
             ),
             reward,
-            done,
+            self.state == stop,
             info
         )
 
@@ -213,22 +211,47 @@ class AbstractEnv(gym.Env, ABC):
                 action = {
                     't': observation.context().time(),
                     'u': observation.context().user(),
-                    'a': int(self.rng.choice(self.config.num_products)),
+                    'a': np.int16(self.rng.choice(self.config.num_products)),
                     'ps': 1.0 / self.config.num_products,
-                    'ps-a': np.ones(self.config.num_products) / self.config.num_products,
+                    'ps-a': (
+                        np.ones(self.config.num_products) / self.config.num_products
+                        if self.config.with_ps_all else
+                        ()
+                    ),
                 }
 
-        observation, reward, done, info = self.step(action['a'] if action is not None else None)
+        if done:
+            return (
+                action,
+                Observation(
+                    DefaultContext(self.current_time, self.current_user_id),
+                    self.empty_sessions
+                ),
+                0,
+                done,
+                None
+            )
+        else:
+            observation, reward, done, info = self.step(
+                action['a'] if action is not None else None
+            )
 
-        return action, observation, reward, done, info
+            return action, observation, reward, done, info
 
-    def generate_logs(self, num_offline_users, agent = None):
+    def generate_logs(
+            self,
+            num_offline_users: int,
+            agent: Agent = None,
+            num_organic_offline_users: int = 0
+    ):
         """
         Produce logs of applying an Agent in the Environment for the specified amount of Users.
         If the Agent is not provided, then the default Agent is used that randomly selects an Action.
         """
 
-        self.agent = agent
+        if agent:
+            old_agent = self.agent
+            self.agent = agent
 
         data = {
             't': [],
@@ -240,27 +263,23 @@ class AbstractEnv(gym.Env, ABC):
             'ps': [],
             'ps-a': [],
         }
-        for user_id in range(num_offline_users):
-            self.reset(user_id)
-            observation, reward, done, _ = self.step(None)
+
+        def _store_organic(observation):
             assert (observation is not None)
-            assert (reward is None)
+            assert (observation.sessions() is not None)
+            for session in observation.sessions():
+                data['t'].append(session['t'])
+                data['u'].append(session['u'])
+                data['z'].append('organic')
+                data['v'].append(session['v'])
+                data['a'].append(None)
+                data['c'].append(None)
+                data['ps'].append(None)
+                data['ps-a'].append(None)
 
-            while not done:
-                assert (observation is not None)
-                assert (observation.sessions() is not None)
-                for session in observation.sessions():
-                    data['t'].append(session['t'])
-                    data['u'].append(session['u'])
-                    data['z'].append('organic')
-                    data['v'].append(session['v'])
-                    data['a'].append(None)
-                    data['c'].append(None)
-                    data['ps'].append(None)
-                    data['ps-a'].append(None)
-
-                action, observation, reward, done, info = self.step_offline(observation, reward, done)
-
+        def _store_bandit(action, reward):
+            if action:
+                assert (reward is not None)
                 data['t'].append(action['t'])
                 data['u'].append(action['u'])
                 data['z'].append('bandit')
@@ -268,9 +287,41 @@ class AbstractEnv(gym.Env, ABC):
                 data['a'].append(action['a'])
                 data['c'].append(reward)
                 data['ps'].append(action['ps'])
-                data['ps-a'].append(action['ps-a'])
+                data['ps-a'].append(action['ps-a'] if 'ps-a' in action else ())
 
-                if done:
-                    break
+        unique_user_id = 0
+        for _ in trange(num_organic_offline_users, desc='Organic Users'):
+            self.reset(unique_user_id)
+            unique_user_id += 1
+            observation, _, _, _ = self.step(None)
+            _store_organic(observation)
+
+        for _ in trange(num_offline_users, desc='Users'):
+            self.reset(unique_user_id)
+            unique_user_id += 1
+            observation, reward, done, _ = self.step(None)
+
+            while not done:
+                _store_organic(observation)
+                action, observation, reward, done, _ = self.step_offline(
+                    observation, reward, done
+                )
+                _store_bandit(action, reward)
+
+            _store_organic(observation)
+            action, _, reward, done, _ = self.step_offline(
+                observation, reward, done
+            )
+            assert done, 'Done must not be changed!'
+            _store_bandit(action, reward)
+
+        data['t'] = np.array(data['t'], dtype=np.float32)
+        data['u'] = pd.array(data['u'], dtype=pd.UInt16Dtype())
+        data['v'] = pd.array(data['v'], dtype=pd.UInt16Dtype())
+        data['a'] = pd.array(data['a'], dtype=pd.UInt16Dtype())
+        data['c'] = np.array(data['c'], dtype=np.float32)
+
+        if agent:
+            self.agent = old_agent
 
         return pd.DataFrame().from_dict(data)

@@ -1,5 +1,6 @@
 from numpy import array, sqrt, kron, eye, ones
-from .abstract import AbstractEnv, organic, bandit, stop, f, env_args
+
+from .abstract import AbstractEnv, f, env_args
 
 # Default arguments for toy environment ------------------------------------
 
@@ -39,25 +40,25 @@ class RecoEnv0(AbstractEnv):
 
         # creating click probability matrix
         self.phi = self.rng.normal(
-            scale = sqrt(self.config.phi_var),
-            size = (self.config.num_products, self.config.num_products)
+            scale=sqrt(self.config.phi_var),
+            size=(self.config.num_products, self.config.num_products)
         )
         self.click_probs = f(self.config.num_products / 5. * (T + T.T) + self.phi)
 
         self.initial_product_probs = \
             ones((self.config.num_products)) / self.config.num_products
 
-    def reset(self, user_id = 0):
+    def reset(self, user_id=0):
         super().reset(user_id)
 
         # Current Organic product viewed, choose from initial probabilities
         self.product_view = self.rng.choice(
-            self.config.num_products, p = self.initial_product_probs
+            self.config.num_products, p=self.initial_product_probs
         )
 
     def update_state(self):
         """Update Markov state between `organic`, `bandit`, or `stop`"""
-        self.state = self.rng.choice(3, p = self.state_transition[self.state, :])
+        self.state = self.rng.choice(3, p=self.state_transition[self.state, :])
 
     def draw_click(self, recommendation):
         p = self.click_probs[recommendation, self.product_view]
@@ -65,4 +66,4 @@ class RecoEnv0(AbstractEnv):
 
     def update_product_view(self):
         probs = self.product_transition[self.product_view, :]
-        self.product_view = self.rng.choice(self.config.num_products, p = probs)
+        self.product_view = self.rng.choice(self.config.num_products, p=probs)

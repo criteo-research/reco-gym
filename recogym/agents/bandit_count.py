@@ -1,11 +1,12 @@
 import numpy as np
 
-from recogym import Configuration
+from ..envs.configuration import Configuration
 
 from .abstract import Agent
 
 bandit_count_args = {
     'num_products': 10,
+    'with_ps_all': False,
 }
 
 
@@ -29,8 +30,12 @@ class BanditCount(Agent):
 
         self.update_lpv(observation)
         action = self.ctr[self.last_product_viewed, :].argmax()
-        ps_all = np.zeros(self.config.num_products)
-        ps_all[action] = 1.0
+
+        if self.config.with_ps_all:
+            ps_all = np.zeros(self.config.num_products)
+            ps_all[action] = 1.0
+        else:
+            ps_all = ()
 
         return {
             **super().act(observation, reward, done),
@@ -46,11 +51,15 @@ class BanditCount(Agent):
 
         if action is not None and reward is not None:
 
+            ix = self.last_product_viewed
+            jx = action['a']
             self.update_lpv(observation)
-            self.pulls_a[self.last_product_viewed, action['a']] += 1
-            self.clicks_a[self.last_product_viewed, action['a']] += reward
+            self.pulls_a[ix, jx] += 1
+            self.clicks_a[ix, jx] += reward
 
-            self.ctr = (self.clicks_a + 1) / (self.pulls_a + 2)
+            self.ctr[ix, jx] = (
+                    (self.clicks_a[ix, jx] + 1) / (self.pulls_a[ix, jx] + 2)
+            )
 
     def update_lpv(self, observation):
         """Updates the last product viewed based on the observation"""

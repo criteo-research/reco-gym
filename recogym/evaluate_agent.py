@@ -32,8 +32,8 @@ GraphCTRMax = 0.021
 
 
 # from Keras
-def to_categorical(y, num_classes = None, dtype = 'float32'):
-    y = np.array(y, dtype = 'int')
+def to_categorical(y, num_classes=None, dtype='float32'):
+    y = np.array(y, dtype='int')
     input_shape = y.shape
     if input_shape and input_shape[-1] == 1 and len(input_shape) > 1:
         input_shape = tuple(input_shape[:-1])
@@ -41,7 +41,7 @@ def to_categorical(y, num_classes = None, dtype = 'float32'):
     if not num_classes:
         num_classes = np.max(y) + 1
     n = y.shape[0]
-    categorical = np.zeros((n, num_classes), dtype = dtype)
+    categorical = np.zeros((n, num_classes), dtype=dtype)
     categorical[np.arange(n), y] = 1
     output_shape = input_shape + (num_classes,)
     categorical = np.reshape(categorical, output_shape)
@@ -51,11 +51,11 @@ def to_categorical(y, num_classes = None, dtype = 'float32'):
 def evaluate_agent(
         env,
         agent,
-        num_initial_train_users = 100,
-        num_step_users = 1000,
-        num_steps = 10,
-        training_approach = TrainingApproach.ALL_DATA,
-        sliding_window_samples = 10000):
+        num_initial_train_users=100,
+        num_step_users=1000,
+        num_steps=10,
+        training_approach=TrainingApproach.ALL_DATA,
+        sliding_window_samples=10000):
     initial_agent = deepcopy(agent)
 
     unique_user_id = 0
@@ -63,11 +63,14 @@ def evaluate_agent(
         env.reset(unique_user_id + u)
         agent.reset()
         new_observation, reward, done, _ = env.step(None)
-        while not done:
+        while True:
             old_observation = new_observation
-            action, new_observation, reward, done, _ = env.step_offline(new_observation, reward,
-                                                                        False)
+            action, new_observation, reward, done, _ = env.step_offline(
+                new_observation, reward, False
+            )
             agent.train(old_observation, action, reward, done)
+            if done:
+                break
     unique_user_id += num_initial_train_users
 
     rewards = {
@@ -164,7 +167,7 @@ def _collect_stats(args):
         snd: Q0.975
     """
     start = time.time()
-    print(f"Start: Num of Offline Users: {args['num_offline_users']}")
+    print(f"START: Num of Users: {args['num_offline_users']}")
     stats = recogym.test_agent(
         deepcopy(args['env']),
         deepcopy(args['agent']),
@@ -172,9 +175,10 @@ def _collect_stats(args):
         args['num_online_users'],
         args['num_organic_offline_users'],
         args['num_epochs'],
-        args['epoch_with_random_reset']
+        args['epoch_with_random_reset'],
+        args['with_cache'],
     )
-    print(f"End: Num of Offline Users: {args['num_offline_users']} ({time.time() - start}s)")
+    print(f"END: Num of Offline Users: {args['num_offline_users']} ({time.time() - start}s)")
     return stats
 
 
@@ -183,11 +187,12 @@ def gather_agent_stats(
         env_args,
         extra_env_args,
         agents_init_data,
-        user_samples = (100, 1000, 2000, 3000, 5000, 8000, 10000, 13000, 14000, 15000),
-        num_online_users = 15000,
-        num_epochs = 1,
-        epoch_with_random_reset = False,
-        num_organic_offline_users = 100
+        user_samples=(100, 1000, 2000, 3000, 5000, 8000, 10000, 13000, 14000, 15000),
+        num_online_users: int = 15000,
+        num_epochs: int = 1,
+        epoch_with_random_reset: bool = False,
+        num_organic_offline_users: int = 100,
+        with_cache: bool = False
 ):
     """
     The function that gathers Agents statistics via evaluating Agent performance
@@ -209,6 +214,8 @@ def gather_agent_stats(
     :param num_online_users: Number of Online Users i.e. Users used to validate a Model.
     :param num_epochs: how many different epochs should be tried to gather stats?
     :param epoch_with_random_reset: should be a Random Seed reset at each new epoch?
+    :param num_organic_offline_users: how many Organic only users should be used for training.
+    :param with_cache: is the cache used for training data or not?
 
     :return: a dictionary with stats
         {
@@ -245,7 +252,7 @@ def gather_agent_stats(
             AgentStats.Q0_975: [],
         }
 
-        with Pool(processes = multiprocessing.cpu_count()) as pool:
+        with Pool(processes=multiprocessing.cpu_count()) as pool:
             argss = [
                 {
                     'env': new_env,
@@ -255,6 +262,7 @@ def gather_agent_stats(
                     'num_organic_offline_users': num_organic_offline_users,
                     'num_epochs': num_epochs,
                     'epoch_with_random_reset': epoch_with_random_reset,
+                    'with_cache': with_cache
                 }
                 for num_offline_users in user_samples
             ]
@@ -288,7 +296,7 @@ def build_agents(agents_init_data, new_env_args):
     return agents
 
 
-def generate_epsilons(epsilon_step = EpsilonDelta, iterations = EpsilonSteps):
+def generate_epsilons(epsilon_step=EpsilonDelta, iterations=EpsilonSteps):
     return [0.00, 0.01, 0.02, 0.03, 0.05, 0.08]
 
 
@@ -307,7 +315,7 @@ def _collect_evolution_stats(args):
     start = time.time()
     epsilon = args['epsilon']
     epsilon_key = format_epsilon(epsilon)
-    print(f"Start: ε = {epsilon_key}")
+    print(f"START: ε = {epsilon_key}")
     num_evolution_steps = args['num_evolution_steps']
     rewards = recogym.evaluate_agent(
         deepcopy(args['env']),
@@ -320,7 +328,7 @@ def _collect_evolution_stats(args):
 
     assert (len(rewards[EvolutionCase.SUCCESS]) == len(rewards[EvolutionCase.FAILURE]))
     assert (len(rewards[EvolutionCase.SUCCESS]) == num_evolution_steps)
-    print(f"End: ε = {epsilon_key} ({time.time() - start}s)")
+    print(f"END: ε = {epsilon_key} ({time.time() - start}s)")
 
     return {
         epsilon_key: {
@@ -339,10 +347,10 @@ def gather_exploration_stats(
         extra_env_args,
         agents_init_data,
         training_approach,
-        num_initial_train_users = 1000,
-        num_step_users = 1000,
-        epsilons = EvolutionEpsilons,
-        num_evolution_steps = 6
+        num_initial_train_users=1000,
+        num_step_users=1000,
+        epsilons=EvolutionEpsilons,
+        num_evolution_steps=6
 ):
     """
     A helper function that collects data regarding Agents evolution
@@ -406,7 +414,7 @@ def gather_exploration_stats(
         print(f"Agent: {agent_key}")
         agent_stats = dict()
 
-        with Pool(processes = multiprocessing.cpu_count()) as pool:
+        with Pool(processes=multiprocessing.cpu_count()) as pool:
             for result in pool.map(
                     _collect_evolution_stats,
                     [
@@ -443,7 +451,7 @@ def plot_agent_stats(agent_stats):
     _, ax = plt.subplots(
         1,
         1,
-        figsize = (16, 8)
+        figsize=(16, 8)
     )
 
     user_samples = agent_stats[AgentStats.SAMPLES]
@@ -454,7 +462,7 @@ def plot_agent_stats(agent_stats):
             user_samples,
             stats[AgentStats.Q0_975],
             stats[AgentStats.Q0_025],
-            alpha = .05
+            alpha=.05
         )
 
         ax.plot(user_samples, stats[AgentStats.Q0_500])
@@ -470,16 +478,16 @@ def plot_agent_stats(agent_stats):
 
 def plot_evolution_stats(
         agent_evolution_stats,
-        max_agents_per_row = 2,
-        epsilons = EvolutionEpsilons,
-        plot_min = GraphCTRMin,
-        plot_max = GraphCTRMax
+        max_agents_per_row=2,
+        epsilons=EvolutionEpsilons,
+        plot_min=GraphCTRMin,
+        plot_max=GraphCTRMax
 ):
     figs, axs = plt.subplots(
         int(len(agent_evolution_stats) / max_agents_per_row),
         max_agents_per_row,
-        figsize = (16, 10),
-        squeeze = False
+        figsize=(16, 10),
+        squeeze=False
     )
     labels = [("$\epsilon=$" + format_epsilon(epsilon)) for epsilon in epsilons]
 
@@ -514,7 +522,7 @@ def plot_evolution_stats(
                 range(len(steps)),
                 q0_975,
                 q0_025,
-                alpha = .05
+                alpha=.05
             )
             ax.plot(steps, ms)
 
@@ -533,13 +541,13 @@ def plot_evolution_stats(
         ax.set_ylabel('CTR')
         ax.set_ylim([plot_min, plot_max])
 
-    plt.subplots_adjust(hspace = .5)
+    plt.subplots_adjust(hspace=.5)
     plt.show()
 
 
 def plot_heat_actions(
         agent_evolution_stats,
-        epsilons = EvolutionEpsilons
+        epsilons=EvolutionEpsilons
 ):
     max_epsilons_per_row = len(epsilons)
     the_first_agent = next(iter(agent_evolution_stats.values()))
@@ -548,8 +556,8 @@ def plot_heat_actions(
     figs, axs = plt.subplots(
         int(len(agent_evolution_stats) * epsilon_steps / max_epsilons_per_row),
         max_epsilons_per_row,
-        figsize = (16, 4 * rows),
-        squeeze = False
+        figsize=(16, 4 * rows),
+        squeeze=False
     )
 
     for (ix, agent_key) in enumerate(agent_evolution_stats):
@@ -574,15 +582,15 @@ def plot_heat_actions(
 
             ax.set_title(f"Agent: {agent_key}\n$\epsilon=${epsilon_key}")
 
-            _ = ax.figure.colorbar(im, ax = ax)
+            _ = ax.figure.colorbar(im, ax=ax)
 
     plt.show()
 
 
 def plot_roi(
         agent_evolution_stats,
-        epsilons = EvolutionEpsilons,
-        max_agents_per_row = 2
+        epsilons=EvolutionEpsilons,
+        max_agents_per_row=2
 ):
     """
     A helper function that calculates Return of Investment (ROI) for applying Epsilon-Greedy Selection Policy.
@@ -605,8 +613,8 @@ def plot_roi(
     figs, axs = plt.subplots(
         int(len(agent_evolution_stats) / max_agents_per_row),
         max_agents_per_row,
-        figsize = (16, 8),
-        squeeze = False
+        figsize=(16, 8),
+        squeeze=False
     )
     labels = [("$\epsilon=$" + format_epsilon(epsilon)) for epsilon in epsilons if epsilon != 0.0]
 
@@ -711,12 +719,12 @@ def plot_roi(
             + "{0:.5f}".format(round(roi_means_div, 5))
             + "$"
         )
-        ax.legend(labels, loc = 10)
+        ax.legend(labels, loc=10)
         ax.set_ylabel('ROI')
 
         agent_roi_stats[agent_key] = agent_stats
 
-    plt.subplots_adjust(hspace = .5)
+    plt.subplots_adjust(hspace=.5)
     plt.show()
     return agent_roi_stats
 
@@ -839,7 +847,7 @@ def verify_agents_SNIPS(reco_log, agents):
     return pd.DataFrame().from_dict(stat)
 
 
-def evaluate_recall_at_k(agent, reco_log, k = 5):
+def evaluate_recall_at_k(agent, reco_log, k=5):
     hits = []
     for u in range(max(reco_log.u)):
         t = np.array(reco_log[reco_log['u'] == u].t)
@@ -879,7 +887,7 @@ def evaluate_recall_at_k(agent, reco_log, k = 5):
     return hits
 
 
-def verify_agents_recall_at_k(reco_log, agents, k = 5):
+def verify_agents_recall_at_k(reco_log, agents, k=5):
     stat = {
         'Agent': [],
         '0.025': [],
@@ -888,7 +896,7 @@ def verify_agents_recall_at_k(reco_log, agents, k = 5):
     }
 
     for agent_id in agents:
-        hits = evaluate_recall_at_k(agents[agent_id], reco_log, k = k)
+        hits = evaluate_recall_at_k(agents[agent_id], reco_log, k=k)
         mean_hits = np.mean(hits)
         se_hits = np.std(hits) / np.sqrt(len(hits))
         stat['Agent'].append(agent_id)
@@ -903,9 +911,9 @@ def plot_verify_agents(result):
     ax.set_title('CTR Estimate for Different Agents')
     plt.errorbar(result['Agent'],
                  result['0.500'],
-                 yerr = (result['0.500'] - result['0.025'],
-                         result['0.975'] - result['0.500']),
-                 fmt = 'o',
-                 capsize = 4)
-    plt.xticks(result['Agent'], result['Agent'], rotation = 'vertical')
+                 yerr=(result['0.500'] - result['0.025'],
+                       result['0.975'] - result['0.500']),
+                 fmt='o',
+                 capsize=4)
+    plt.xticks(result['Agent'], result['Agent'], rotation='vertical')
     return fig

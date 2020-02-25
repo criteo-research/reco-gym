@@ -1,10 +1,11 @@
 import numpy as np
 
-from recogym.agents import Agent
-from recogym import Configuration
+from .abstract import Agent
+from ..envs.configuration import Configuration
 
 organic_count_args = {
     'num_products': 10,
+    'with_ps_all': False,
 }
 
 
@@ -56,8 +57,11 @@ class OrganicCount(Agent):
         self.update_lpv(observation)
 
         action = self.co_counts[self.last_product_viewed, :].argmax()
-        ps_all = np.zeros(self.config.num_products)
-        ps_all[action] = 1.0
+        if self.config.with_ps_all:
+            ps_all = np.zeros(self.config.num_products)
+            ps_all[action] = 1.0
+        else:
+            ps_all = ()
         return {
             **super().act(observation, reward, done),
             **{

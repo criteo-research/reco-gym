@@ -2,12 +2,13 @@
 import numpy as np
 from numpy.random.mtrand import RandomState
 
-from recogym.agents import Agent
-from recogym import Configuration
+from .abstract import Agent
+from ..envs.configuration import Configuration
 
 random_args = {
     'num_products': 10,
     'random_seed': np.random.randint(2 ** 31 - 1),
+    'with_ps_all': False,
 }
 
 
@@ -24,6 +25,10 @@ class RandomAgent(Agent):
             **{
                 'a': self.rng.choice(self.config.num_products),
                 'ps': 1.0 / float(self.config.num_products),
-                'ps-a': np.ones(self.config.num_products) / self.config.num_products,
+                'ps-a': (
+                    np.ones(self.config.num_products) / self.config.num_products
+                    if self.config.with_ps_all else
+                    ()
+                ),
             },
         }

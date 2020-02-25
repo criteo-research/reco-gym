@@ -5,8 +5,8 @@ import torch.optim as optim
 from numpy.random.mtrand import RandomState
 from torch import nn
 
-from recogym.agents import AbstractFeatureProvider, ViewsFeaturesProvider, Model, ModelBasedAgent
-from recogym import Configuration
+from .abstract import AbstractFeatureProvider, ViewsFeaturesProvider, Model, ModelBasedAgent
+from ..envs.configuration import Configuration
 
 nn_ips_args = {
     'num_products': 10,
@@ -21,6 +21,7 @@ nn_ips_args = {
     'num_epochs': 100,
     'num_hidden': 20,
     'lambda_val': 0.01,
+    'with_ps_all': False,
 }
 
 
@@ -94,7 +95,7 @@ class NnIpsModelBuilder(AbstractFeatureProvider):
 
         class TorchFeatureProvider(ViewsFeaturesProvider):
             def __init__(self, config):
-                super(TorchFeatureProvider, self).__init__(config)
+                super(TorchFeatureProvider, self).__init__(config, is_sparse=True)
 
             def features(self, observation):
                 base_features = super().features(observation).reshape(1, self.config.num_products)
@@ -115,11 +116,17 @@ class NnIpsModelBuilder(AbstractFeatureProvider):
                         np.array(self.config.num_products),
                         p = prob
                     )
-                    ps_all = prob
+                    if self.config.with_ps_all:
+                        ps_all = prob
+                    else:
+                        ps_all = ()
                 else:
                     action = torch.argmax(prob).item()
-                    ps_all = np.zeros(self.config.num_products)
-                    ps_all[action] = 1.0
+                    if self.config.with_ps_all:
+                        ps_all = np.zeros(self.config.num_products)
+                        ps_all[action] = 1.0
+                    else:
+                        ps_all = ()
                 return {
                     **super().act(observation, features),
                     **{

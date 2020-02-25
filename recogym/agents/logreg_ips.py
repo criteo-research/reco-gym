@@ -1,10 +1,8 @@
-import numpy as np
-
 from numpy.random.mtrand import RandomState
 from sklearn.linear_model import LogisticRegression
 
-from recogym.agents import *
-from recogym import Configuration
+from .abstract import *
+from ..envs.configuration import Configuration
 
 logreg_multiclass_ips_args = {
     'num_products': 10,
@@ -17,6 +15,7 @@ logreg_multiclass_ips_args = {
     'poly_degree': 2,
     'solver': 'lbfgs',
     'max_iter': 5000,
+    'with_ps_all': False,
 }
 
 
@@ -41,7 +40,7 @@ class LogregMulticlassIpsModelBuilder(AbstractFeatureProvider):
             """
 
             def __init__(self, config):
-                super(LogregMulticlassViewsFeaturesProvider, self).__init__(config)
+                super(LogregMulticlassViewsFeaturesProvider, self).__init__(config, is_sparse=True)
 
             def features(self, observation):
                 base_features = super().features(observation)
@@ -63,15 +62,21 @@ class LogregMulticlassIpsModelBuilder(AbstractFeatureProvider):
                     action_proba = self.logreg.predict_proba(features)[0, :]
                     action = self.rng.choice(
                         self.config.num_products,
-                        p = action_proba
+                        p=action_proba
                     )
                     ps = action_proba[action]
-                    all_ps = action_proba
+                    if self.config.with_ps_all:
+                        all_ps = action_proba
+                    else:
+                        all_ps = ()
                 else:
                     action = self.logreg.predict(features).item()
                     ps = 1.0
-                    all_ps = np.zeros(self.config.num_products)
-                    all_ps[action] = 1.0
+                    if self.config.with_ps_all:
+                        all_ps = np.zeros(self.config.num_products)
+                        all_ps[action] = 1.0
+                    else:
+                        all_ps = ()
                 return {
                     **super().act(observation, features),
                     **{
@@ -85,10 +90,10 @@ class LogregMulticlassIpsModelBuilder(AbstractFeatureProvider):
         weights = deltas / pss
 
         logreg = LogisticRegression(
-            solver = self.config.solver,
-            max_iter = self.config.max_iter,
-            multi_class = 'multinomial',
-            random_state = self.config.random_seed
+            solver=self.config.solver,
+            max_iter=self.config.max_iter,
+            multi_class='multinomial',
+            random_state=self.config.random_seed
         )
 
         lr = logreg.fit(features, actions, weights)
@@ -104,7 +109,7 @@ class LogregMulticlassIpsAgent(ModelBasedAgent):
     Logistic Regression Multiclass Agent (IPS version)
     """
 
-    def __init__(self, config = Configuration(logreg_multiclass_ips_args)):
+    def __init__(self, config=Configuration(logreg_multiclass_ips_args)):
         super(LogregMulticlassIpsAgent, self).__init__(
             config,
             LogregMulticlassIpsModelBuilder(config)

@@ -14,6 +14,7 @@ from recogym.agents import OrganicUserEventCounterAgent, organic_user_count_args
 
 def competition_score(
     num_products: int,
+    num_organic_users_to_train: int,
     num_users_to_train: int,
     num_users_to_score: int,
     random_seed: int,
@@ -22,12 +23,14 @@ def competition_score(
     log_epsilon: float,
     sigma_omega: float,
     agent_class,
-    agent_configs
+    agent_configs,
+    agent_name: str,
+    with_cache: bool,
 ):
-    TrainingDataSamples = tuple([num_users_to_train])
-    TestingDataSamples = num_users_to_score
-    StatEpochs = 1
-    StatEpochsNewRandomSeed = True
+    training_data_samples = tuple([num_users_to_train])
+    testing_data_samples = num_users_to_score
+    stat_epochs = 1
+    stat_epochs_new_random_seed = True
 
     std_env_args = {
         **env_1_args,
@@ -40,7 +43,6 @@ def competition_score(
 
     env = gym.make('reco-gym-v1')
 
-    time_start = datetime.datetime.now()
     agent_stats = gather_agent_stats(
         env,
         std_env_args,
@@ -55,7 +57,7 @@ def competition_score(
         },
         {
             **build_agent_init(
-                'Test Agent',
+                agent_name,
                 agent_class,
                 {
                     **agent_configs,
@@ -63,11 +65,14 @@ def competition_score(
                 }
             ),
         },
-        TrainingDataSamples,
-        TestingDataSamples,
-        StatEpochs,
-        StatEpochsNewRandomSeed
+        training_data_samples,
+        testing_data_samples,
+        stat_epochs,
+        stat_epochs_new_random_seed,
+        num_organic_users_to_train,
+        with_cache
     )
+    time_start = datetime.datetime.now()
 
     q0_025 = []
     q0_500 = []
