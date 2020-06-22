@@ -17,6 +17,31 @@ class AgentStats(Enum):
     AGENTS = 4
     SUCCESSES = 5  # Amount of Clicks.
     FAILURES = 6  # Amount of non CLicks.
+    
+class AgentStatsSale(Enum):
+    """
+    Agent Statistics
+    """
+
+    # Confidence Interval.
+    Q0_025 = 0
+    Q0_500 = 1
+    Q0_975 = 2
+
+    # Number of Samples (Users) in a Training Data.
+    SAMPLES = 3
+
+    AGENTS = 4
+    SUCCESSES = 5  # Amount of Clicks.
+    FAILURES = 6  # Amount of non CLicks.
+    
+    # Confidence Interval.
+    Q0_025_click = 0
+    Q0_500_click = 1
+    Q0_975_click = 2
+
+    SUCCESSES_click = 5  # Amount of Clicks.
+    FAILURES_click = 6  # Amount of non CLicks.
 
 
 class AgentInit(Enum):

@@ -19,12 +19,18 @@ class OrganicSessions(Session):
     def __init__(self):
         super(OrganicSessions, self).__init__()
 
-    def next(self, context, product):
+    ##H
+    def next(self, context, product, sale = False):
+        if sale == False :
+            z = 'pageview'
+        else :
+            z = 'sale'
+            
         self.append(
             {
                 't': context.time(),
                 'u': context.user(),
-                'z': 'pageview',
+                'z': z,
                 'v': product
             }
         )
@@ -34,3 +40,7 @@ class OrganicSessions(Session):
 
     def get_views(self):
         return [p for _, _, e, p in self if e == 'pageview']
+
+    ##H
+    def get_sales(self):
+        return [p for _, _, e, p in self if e == 'sale']

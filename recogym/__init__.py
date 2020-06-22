@@ -1,4 +1,4 @@
-from .envs import env_0_args, env_1_args
+from .envs import env_0_args, env_1_args, env_1_sale_args
 from .envs import Observation
 from .envs import Configuration
 from .envs import Session
@@ -42,5 +42,10 @@ register(
 register(
     id = 'reco-gym-v1',
     entry_point = 'recogym.envs:RecoEnv1'
+)
+
+register(
+    id = 'reco-gym-sale-v1',
+    entry_point = 'recogym.envs:RecoEnv1Sale'
 )
 

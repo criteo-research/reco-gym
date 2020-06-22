@@ -46,7 +46,7 @@ env_1_args = {
 }
 
 ##H
-env_2_args = {
+env_1_sale_args = {
     **env_1_args,
     **{
         'kappa': 0.5, # post-click scaling of theuser embedding update 
@@ -71,10 +71,10 @@ def ff(xx, aa=5, bb=2, cc=0.3, dd=2, ee=6):
 
 
 # Environment definition.
-class RecoEnv2(AbstractEnv): ##H
+class RecoEnv1Sale(AbstractEnv): ##H
 
     def __init__(self):
-        super(RecoEnv2, self).__init__() ##H
+        super(RecoEnv1Sale, self).__init__() ##H
         self.cached_state_seed = None
         self.proba_sales={} ##H
         self.proba_sales_after_scaling={} ##H

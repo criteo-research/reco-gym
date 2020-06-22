@@ -30,7 +30,6 @@ EvolutionEpsilons = (0.00, 0.01, 0.02, 0.03, 0.05, 0.08)
 GraphCTRMin = 0.009
 GraphCTRMax = 0.021
 
-
 # from Keras
 def to_categorical(y, num_classes=None, dtype='float32'):
     y = np.array(y, dtype='int')
@@ -119,10 +118,10 @@ def evaluate_agent(
                     training_agent.train(old_observation, action, reward, done)
 
                 if reward:
-                    successes += 1
+                    successes += reward 
                     if 'greedy' in action and action['greedy']:
-                        successes_greedy += 1
-                    rewards[EvolutionCase.ACTIONS][action['a']][-1] += 1
+                        successes_greedy += reward ##H
+                    rewards[EvolutionCase.ACTIONS][action['a']][-1] += reward 
                 else:
                     if 'greedy' in action and action['greedy']:
                         failures_greedy += 1
