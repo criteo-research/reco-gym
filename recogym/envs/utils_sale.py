@@ -402,7 +402,7 @@ class VanillaContextualBandit(Agent):
         X = user_states
         a = actions
         p = proba_actions
-        r = rewards
+        r = (rewards>0)*1
         
         # Put into PyTorch variables - drop unsaled samples
         X = Variable(torch.Tensor(X[r != 0]))
