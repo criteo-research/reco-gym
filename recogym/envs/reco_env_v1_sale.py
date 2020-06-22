@@ -508,3 +508,4 @@ class RecoEnv1Sale(AbstractEnv): ##H
         # add_term = np.expand_dims(self.config.kappa*self.Lambda[int(a),:], axis=1)
         # self.omega = (self.omega + add_term)/omega_norm
         self.delta = (1-self.config.kappa)*self.delta + self.config.kappa*np.expand_dims(self.Lambda[int(a),:], axis=1)
+
