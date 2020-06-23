@@ -53,7 +53,8 @@ env_1_sale_args = {
         'sigma_Lambda' : 1,
         # 'user_propensity' : {'a':2, 'b':6}, # propensity of buying of users, drawn from a beta distribution
         'psale_scale' : 0.25, # scaling coefficient for the probability of drawing a sale
-        'delta_for_clicks' : 1
+        'delta_for_clicks' : 1,
+        'delta_for_views' : 0
     }
 }
 
@@ -205,6 +206,7 @@ class RecoEnv1Sale(AbstractEnv): ##H
             assert (observation is not None)
             if self.agent:
                 action = self.agent.act(observation, reward, done)
+                print("step offline action", action)
             else:
                 # Select a Product randomly.
                 action = {
@@ -488,7 +490,7 @@ class RecoEnv1Sale(AbstractEnv): ##H
     def draw_sale(self, a):
         ''' Draw sale following a Bernoulli'''
         # compute the sigmoid over the embeddings dot product
-        p_sale = sig(self.Lambda[int(a),:] @ (self.omega+self.delta))[0]
+        p_sale = sig(self.Lambda[int(a),:] @ (self.delta))[0]
         self.proba_sales[self.current_user_id].append(p_sale)
         
         # add the user propensity to buy (personnalized or generic)

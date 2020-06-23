@@ -655,7 +655,7 @@ def plot_roi(
     return agent_roi_stats
 
 
-def verify_agents_sale(env, number_of_users, agents): ##H
+def verify_agents_sale(env, number_of_users, agents, agent_reset = False): ##H
     stat = {
         'Agent': [],
         '0.025': [],
@@ -672,9 +672,12 @@ def verify_agents_sale(env, number_of_users, agents): ##H
 
     # One success is defined as at least 1 sale
     for agent_id in agents:
+        env.reset()
+        if agent_reset == True :
+            agents[agent_id].reset()
         stat['Agent'].append(agent_id)
         stat_click['Agent'].append(agent_id)
-        data = deepcopy(env).generate_logs(number_of_users, agents[agent_id])
+        data = env.generate_logs(number_of_users, agents[agent_id])
         bandits = data[data['z'] == 'bandit']
         successes = np.sum(bandits['r'] > 0)
         failures = bandits[bandits['r'] == 0].shape[0]
@@ -686,7 +689,6 @@ def verify_agents_sale(env, number_of_users, agents): ##H
         stat_click['0.025'].append(beta.ppf(0.025, successes_click + 1, failures_click + 1))
         stat_click['0.500'].append(beta.ppf(0.500, successes_click + 1, failures_click + 1))
         stat_click['0.975'].append(beta.ppf(0.975, successes_click + 1, failures_click + 1))
-
     return pd.DataFrame().from_dict(stat), pd.DataFrame().from_dict(stat_click)
 
 

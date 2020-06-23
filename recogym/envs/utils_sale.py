@@ -351,22 +351,26 @@ def build_rectangular_data(logs, feature_provider):
         
    # from https://github.com/criteo-research/bandit-reco/     
 class MultinomialLogisticRegressionModel(torch.nn.Module):
-    def __init__(self, input_dim, output_dim):
+    def __init__(self, input_dim, output_dim, init_zeros=True):
         torch.nn.Module.__init__(self)
         # Generate weights - initialise randomly
         self.weight = torch.nn.Parameter(torch.Tensor(output_dim, input_dim))
-        # torch.nn.init.kaiming_uniform_(self.weight, a = np.sqrt(5))
-        torch.nn.init.zeros_(self.weight)
+        if init_zeros == True :
+            torch.nn.init.zeros_(self.weight)
+        else :
+            torch.nn.init.kaiming_uniform_(self.weight, a = np.sqrt(5))
+
 
     def forward(self, x):
         inner_product = F.linear(x, self.weight)
         return F.softmax(inner_product, dim = 1)
 
+
 # from https://github.com/criteo-research/bandit-reco/
 class VanillaContextualBandit(Agent):
-    def __init__(self, config, U = U, P = P, clipping_value = 1e5, max_epoch=30):
+    def __init__(self, config, U = U, P = P, clipping_value = 1e5, max_epoch=30, init_zeros = True):
         Agent.__init__(self, config)
-        self.model = MultinomialLogisticRegressionModel(P, P)
+        self.model = MultinomialLogisticRegressionModel(P, P, init_zeros)
         self.loss_history = []
         self.user_state = np.zeros(P)
         self.U = U
@@ -468,6 +472,7 @@ class VanillaContextualBandit(Agent):
         self.user_state = np.zeros(self.P)
         
         
+# from https://github.com/criteo-research/bandit-reco/
 class LogContextualBandit(VanillaContextualBandit):
 
     def loss(self, X, a, proba_logged_actions, r):
@@ -486,10 +491,10 @@ class LogContextualBandit(VanillaContextualBandit):
         return loss.mean()
     
     
-    
+ # from https://github.com/criteo-research/bandit-reco/   
 class PoemContextualBandit(VanillaContextualBandit):
-    def __init__(self, config, U = U, P = P, max_epoch=30, variance_penalization_factor=0.):
-        VanillaContextualBandit.__init__(self, config, U=U, P=P, max_epoch=max_epoch)
+    def __init__(self, config, U = U, P = P, max_epoch=30, variance_penalization_factor=0., init_zeros = False):
+        VanillaContextualBandit.__init__(self, config, U=U, P=P, max_epoch=max_epoch, init_zeros = init_zeros)
         self.variance_penalization_factor = variance_penalization_factor
 
     def loss(self, X, a, proba_logged_actions, r):
@@ -505,3 +510,8 @@ class PoemContextualBandit(VanillaContextualBandit):
         reward = predicted_proba / proba_logged_actions
         loss = - reward.mean() + self.variance_penalization_factor*torch.sqrt(torch.var(reward)/predicted_proba.size()[0])
         return loss
+    
+    
+    
+    
+    
