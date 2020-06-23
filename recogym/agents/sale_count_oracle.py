@@ -2,8 +2,8 @@ import numpy as np
 from numba import njit
 
 # from ..envs.configuration import Configuration
-# from ..envs.reco_env_v1_sale import env_1_args
-# from .abstract import Agent
+from ..envs.reco_env_v1_sale import env_1_args, ff, sig
+from .abstract import Agent
 from recogym.envs.reco_env_v1_sale import RecoEnv1Sale
 
 
@@ -11,7 +11,7 @@ from recogym.envs.reco_env_v1_sale import RecoEnv1Sale
 def sig(x):
     return 1.0 / (1.0 + np.exp(-x))
 
-class SaleOracleAgent(Agent, RecoEnv1Sale):
+class SaleCountOracleAgent(Agent, RecoEnv1Sale):
     """
     Sale Oracle
 
@@ -19,14 +19,14 @@ class SaleOracleAgent(Agent, RecoEnv1Sale):
     """
 
     def __init__(self, env):
-        super(SaleOracleAgent, self).__init__(env)
+        super(SaleCountOracleAgent, self).__init__(env)
         self.env = env
 
     def act(self, observation, reward, done):
         """Make a recommendation"""
         self.delta = self.env.delta
-        embed_difference = np.array([(-self.delta[:,0]+self.Lambda[int(a),:]) @ self.Lambda[int(a),:] for a in range(self.env.config.num_products)])
-        action = np.argmax(embed_difference)
+        embed = np.array([((1-self.kappa)*self.delta[:,0] + self.kappa*self.Lambda[int(a),:]) @ self.Lambda[int(a),:] for a in range(self.env.config.num_products)])
+        action = np.argmax(embed)
         self.list_actions.append(action)
         
         if self.env.config.with_ps_all:
@@ -48,14 +48,14 @@ class SaleOracleAgent(Agent, RecoEnv1Sale):
         return self.list_actions
 
     def reset(self):
-#         self.env.reset()
         self.list_actions = []
         self.delta = self.env.delta
         self.Lambda = self.env.Lambda
+        self.kappa = self.env.config.kappa
         self.list_actions = []
 
 
-class ViewSaleOracleAgent(Agent, RecoEnv1Sale):
+class ViewSaleCountOracleAgent(Agent, RecoEnv1Sale):
     """
     Sale Oracle
 
@@ -63,7 +63,7 @@ class ViewSaleOracleAgent(Agent, RecoEnv1Sale):
     """
 
     def __init__(self, env):
-        super(ViewSaleOracleAgent, self).__init__(env)
+        super(ViewSaleCountOracleAgent, self).__init__(env)
         self.env = env
 
     def act(self, observation, reward, done):
@@ -83,12 +83,9 @@ class ViewSaleOracleAgent(Agent, RecoEnv1Sale):
         
         # Difference in sale mean for each product if the product is recommended
         proba_with_click = np.array([sig(((1-self.kappa)*self.delta[:,0] + self.kappa*self.Lambda[int(a),:])@self.Lambda[int(a),:]) for a in range(self.env.config.num_products)])
-        proba_no_click = np.array([sig(self.delta[:,0]@self.Lambda[int(a),:]) for a in range(self.env.config.num_products)])
-        
-        proba_difference = proba_with_click - proba_no_click
         
         # Take argmax
-        action = np.argmax(proba_view * proba_difference)
+        action = np.argmax(proba_view * proba_with_click)
         self.list_actions.append(action)
         
         if self.env.config.with_ps_all:
@@ -127,7 +124,7 @@ class ViewSaleOracleAgent(Agent, RecoEnv1Sale):
 
 
 
-class ClickViewSaleOracleAgent(Agent, RecoEnv1Sale):
+class ClickViewSaleCountOracleAgent(Agent, RecoEnv1Sale):
     """
     Sale Oracle
 
@@ -135,7 +132,7 @@ class ClickViewSaleOracleAgent(Agent, RecoEnv1Sale):
     """
 
     def __init__(self, env):
-        super(ClickViewSaleOracleAgent, self).__init__(env)
+        super(ClickViewSaleCountOracleAgent, self).__init__(env)
         self.env = env
 
     def act(self, observation, reward, done):
@@ -165,11 +162,9 @@ class ClickViewSaleOracleAgent(Agent, RecoEnv1Sale):
         
         # Difference in sale mean for each product if the product is recommended
         proba_with_click = np.array([sig(((1-self.kappa)*self.delta[:,0] + self.kappa*self.Lambda[int(a),:])@self.Lambda[int(a),:]) for a in range(self.env.config.num_products)])
-        proba_no_click = np.array([sig(self.delta[:,0]@self.Lambda[int(a),:]) for a in range(self.env.config.num_products)])
-        proba_difference = proba_with_click - proba_no_click
         
         # Take argmax
-        action = np.argmax(proba_view * proba_difference)
+        action = np.argmax(proba_view * proba_with_click)
         self.list_actions.append(action)
         
         if self.env.config.with_ps_all:
