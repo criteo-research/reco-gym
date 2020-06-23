@@ -102,10 +102,20 @@ class AbstractEnv(gym.Env, ABC):
         # Record number of times each product seen for static policy calculation.
         self.organic_views = np.zeros(self.config.num_products)
 
-    def generate_organic_sessions(self):
+    def generate_organic_sessions(self, initial_product = None):
 
         # Initialize session.
         session = OrganicSessions()
+
+        if initial_product is not None :
+            # If a product is specified, use it as initial page for the organic session
+            session.next(
+                DefaultContext(self.current_time, self.current_user_id),
+                initial_product
+            )
+
+            # Update markov state.
+            self.update_state()
 
         while self.state == organic:
             # Add next product view.
@@ -179,10 +189,13 @@ class AbstractEnv(gym.Env, ABC):
 
         if reward == 1:
             self.state = organic  # After a click, Organic Events always follow.
-
+            initial_product = action_id
+        else :
+            initial_product = None
+            
         # Markov state dependent logic.
         if self.state == organic:
-            sessions = self.generate_organic_sessions()
+            sessions = self.generate_organic_sessions(initial_product)
         else:
             sessions = self.empty_sessions
 
