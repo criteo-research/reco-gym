@@ -113,7 +113,7 @@ class RecoEnv1(AbstractEnv):
             [0, 1],
             p=[1 - ctr[recommendation], ctr[recommendation]]
         )
-        return click
+        return click, ctr[recommendation]
 
     # Sample the next organic product view.
     def update_product_view(self):

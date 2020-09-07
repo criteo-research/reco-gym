@@ -166,7 +166,7 @@ class AbstractEnv(gym.Env, ABC):
                     ),
                     sessions
                 ),
-                None,
+                (None, None),
                 self.state == stop,
                 info
             )
@@ -177,7 +177,7 @@ class AbstractEnv(gym.Env, ABC):
 
         self.update_state()
 
-        if reward == 1:
+        if reward[0] == 1:
             self.state = organic  # After a click, Organic Events always follow.
 
         # Markov state dependent logic.
@@ -227,7 +227,7 @@ class AbstractEnv(gym.Env, ABC):
                     DefaultContext(self.current_time, self.current_user_id),
                     self.empty_sessions
                 ),
-                0,
+                (0, 0),
                 done,
                 None
             )
@@ -260,6 +260,7 @@ class AbstractEnv(gym.Env, ABC):
             'v': [],
             'a': [],
             'c': [],
+            'ec': [],
             'ps': [],
             'ps-a': [],
         }
@@ -274,6 +275,7 @@ class AbstractEnv(gym.Env, ABC):
                 data['v'].append(session['v'])
                 data['a'].append(None)
                 data['c'].append(None)
+                data['ec'].append(None)
                 data['ps'].append(None)
                 data['ps-a'].append(None)
 
@@ -285,7 +287,8 @@ class AbstractEnv(gym.Env, ABC):
                 data['z'].append('bandit')
                 data['v'].append(None)
                 data['a'].append(action['a'])
-                data['c'].append(reward)
+                data['c'].append(reward[0])
+                data['ec'].append(reward[1])
                 data['ps'].append(action['ps'])
                 data['ps-a'].append(action['ps-a'] if 'ps-a' in action else ())
 
@@ -316,10 +319,11 @@ class AbstractEnv(gym.Env, ABC):
             _store_bandit(action, reward)
 
         data['t'] = np.array(data['t'], dtype=np.float32)
-        data['u'] = pd.array(data['u'], dtype=pd.UInt16Dtype())
-        data['v'] = pd.array(data['v'], dtype=pd.UInt16Dtype())
-        data['a'] = pd.array(data['a'], dtype=pd.UInt16Dtype())
+        data['u'] = pd.array(data['u'], dtype=pd.UInt32Dtype())
+        data['v'] = pd.array(data['v'], dtype=pd.UInt32Dtype())
+        data['a'] = pd.array(data['a'], dtype=pd.UInt32Dtype())
         data['c'] = np.array(data['c'], dtype=np.float32)
+        data['ec'] = np.array(data['ec'], dtype=np.float32)
 
         if agent:
             self.agent = old_agent
