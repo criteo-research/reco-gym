@@ -7,6 +7,7 @@ from copy import deepcopy
 from tqdm import tqdm, trange
 from recogym import env_1_args, Configuration
 from recogym.agents import RandomAgent, random_args
+import sys
 
 def train_data(data, num_products, va_ratio=0.2, te_ratio=0.2):
         data = pd.DataFrame().from_dict(data)
@@ -116,7 +117,9 @@ env_1_args['random_seed'] = 8964
 env_1_args['num_products'] = P
 env_1_args['K'] = 5
 env_1_args['number_of_flips'] = P//2
-env_1_args['prob_bandit_to_organic'] = 0.99
+env_1_args['prob_leave_bandit'] = 0.1
+env_1_args['prob_leave_organic'] = 0.0
+env_1_args['prob_bandit_to_organic'] = 0.9
 env_1_args['prob_organic_to_bandit'] = 0.1
 
 
@@ -125,7 +128,6 @@ env.init_gym(env_1_args)
 
 data = env.generate_logs(U)
 data.to_csv('data_%d_%d.csv'%(P, U), index=False)
-#data = pd.read_csv('./50w/data.csv')
 
 features, actions, deltas, pss, set_flags = train_data(data, P)
 features, actions, deltas, pss, set_flags = vstack(features), \

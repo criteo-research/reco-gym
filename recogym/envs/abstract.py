@@ -312,11 +312,6 @@ class AbstractEnv(gym.Env, ABC):
                 _store_bandit(action, reward)
 
             _store_organic(observation)
-            action, _, reward, done, _ = self.step_offline(
-                observation, reward, done
-            )
-            assert done, 'Done must not be changed!'
-            _store_bandit(action, reward)
 
         data['t'] = np.array(data['t'], dtype=np.float32)
         data['u'] = pd.array(data['u'], dtype=pd.UInt32Dtype())
