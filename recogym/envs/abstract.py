@@ -138,11 +138,13 @@ class AbstractEnv(gym.Env, ABC):
                 product_view - if Markov state is `organic` then it is an int
                                between 1 and P where P is the number of
                                products otherwise it is None.
-            reward (float) :
+            reward (tuple) :
+                a tuple of values (click, ctr), ctr is click-through-rate which
+                means the probability of user clicking.
                 if the previous state was
-                    `bandit` - then reward is 1 if the user clicked on the ad
-                               you recommended otherwise 0
-                    `organic` - then reward is None
+                    `bandit` - then reward is (1, ctr) if the user clicked on the ad
+                               you recommended otherwise (0, ctr)
+                    `organic` - then reward is (None, None)
             done (bool) :
                 whether it's time to reset the environment again.
                 An episode is over at the end of a user's timeline (all of
@@ -173,7 +175,7 @@ class AbstractEnv(gym.Env, ABC):
 
         assert (action_id is not None)
         # Calculate reward from action.
-        reward = self.draw_click(action_id)
+        reward = self.draw_click(action_id)  # (click ,ctr)
 
         self.update_state()
 
@@ -221,13 +223,14 @@ class AbstractEnv(gym.Env, ABC):
                 }
 
         if done:
+            reward = self.draw_click(action['a'])  # (click ,ctr)
             return (
                 action,
                 Observation(
                     DefaultContext(self.current_time, self.current_user_id),
                     self.empty_sessions
                 ),
-                (0, 0),
+                reward,
                 done,
                 None
             )
@@ -260,7 +263,7 @@ class AbstractEnv(gym.Env, ABC):
             'v': [],
             'a': [],
             'c': [],
-            'ec': [],
+            'ctr': [],
             'ps': [],
             'ps-a': [],
         }
@@ -275,7 +278,7 @@ class AbstractEnv(gym.Env, ABC):
                 data['v'].append(session['v'])
                 data['a'].append(None)
                 data['c'].append(None)
-                data['ec'].append(None)
+                data['ctr'].append(None)
                 data['ps'].append(None)
                 data['ps-a'].append(None)
 
@@ -288,7 +291,7 @@ class AbstractEnv(gym.Env, ABC):
                 data['v'].append(None)
                 data['a'].append(action['a'])
                 data['c'].append(reward[0])
-                data['ec'].append(reward[1])
+                data['ctr'].append(reward[1])
                 data['ps'].append(action['ps'])
                 data['ps-a'].append(action['ps-a'] if 'ps-a' in action else ())
 
@@ -318,7 +321,7 @@ class AbstractEnv(gym.Env, ABC):
         data['v'] = pd.array(data['v'], dtype=pd.UInt32Dtype())
         data['a'] = pd.array(data['a'], dtype=pd.UInt32Dtype())
         data['c'] = np.array(data['c'], dtype=np.float32)
-        data['ec'] = np.array(data['ec'], dtype=np.float32)
+        data['ctr'] = np.array(data['ctr'], dtype=np.float32)
 
         if agent:
             self.agent = old_agent
