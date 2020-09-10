@@ -23,7 +23,7 @@ class RecoEnv0(AbstractEnv):
         # State transition Matrix between Organic, Bandit, Leave
         self.state_transition = array([
             [0, self.config.prob_organic_to_bandit, self.config.prob_leave_organic],
-            [self.config.prob_bandit_to_organic, 0, self.config.prob_leave_organic],
+            [self.config.prob_bandit_to_organic, 0, self.config.prob_leave_bandit],
             [0.0, 0.0, 1.]
         ])
 
