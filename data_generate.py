@@ -8,17 +8,13 @@ from tqdm import tqdm, trange
 from recogym import env_1_args, Configuration
 from recogym.agents import RandomAgent, random_args
 import sys
+from multiprocessing import Pool
 
 def gen_data(data, num_products, va_ratio=0.2, te_ratio=0.2):
     data = pd.DataFrame().from_dict(data)
 
-    features = []
-    actions = []
-    pss = []
-    deltas = []
-    set_flags = []
-
-    for user_id in tqdm(data['u'].unique()):
+    global process_helper
+    def process_helper(user_id):
         tmp_feature = []
         tmp_action = []
         tmp_ps = []
@@ -62,20 +58,25 @@ def gen_data(data, num_products, va_ratio=0.2, te_ratio=0.2):
                 tmp_action.append(action)
                 tmp_delta.append(delta)
                 tmp_ps.append(ps)
-                tmp_set_flag.append(0)
+                tmp_set_flag.append(-1) # user without enough bandits will be removed
 
         tmp_set_flag = np.array(tmp_set_flag)
         va_num = math.ceil(va_ratio*tmp_set_flag.shape[0]) 
         te_num = math.ceil(te_ratio*tmp_set_flag.shape[0]) 
         if va_num + te_num < tmp_set_flag.shape[0]:
+            tmp_set_flag[:-1*(va_num+te_num)] = 0
             tmp_set_flag[-1*(va_num+te_num):] = 1
             tmp_set_flag[-1*te_num:] = 2
 
-        features.append(csr_matrix(np.array(tmp_feature)))
-        actions.append(np.array(tmp_action))
-        deltas.append(np.array(tmp_delta))
-        pss.append(np.array(tmp_ps))
-        set_flags.append(tmp_set_flag)
+        return csr_matrix(np.array(tmp_feature)), \
+                np.array(tmp_action), \
+                np.array(tmp_delta), \
+                np.array(tmp_ps), \
+                np.array(tmp_set_flag)
+
+    with Pool(8) as p:
+        output = p.map(process_helper, data['u'].unique())
+        features, actions, deltas, pss, set_flags = zip(*output)
 
     return vstack(features), np.hstack(actions), np.hstack(deltas), np.hstack(pss), np.hstack(set_flags)
 
@@ -105,29 +106,31 @@ def dump_svm(f, X, y_idx, y_propensity, y_value):
     return
 
 def main():
+    root = sys.argv[1]
     P = 100
-    U = 40#000
+    U = 200000
     
     env_1_args['random_seed'] = 8964
     env_1_args['num_products'] = P
     env_1_args['K'] = 5
+    env_1_args['sigma_omega'] = 0  # default 0.1, the varaince of user embedding changes with time.
     env_1_args['number_of_flips'] = P//2
-    env_1_args['prob_leave_bandit'] = 0.1
+    env_1_args['prob_leave_bandit'] = float(sys.argv[2])
     env_1_args['prob_leave_organic'] = 0.0
-    env_1_args['prob_bandit_to_organic'] = 0.9
-    env_1_args['prob_organic_to_bandit'] = 0.05
+    env_1_args['prob_bandit_to_organic'] = 1 - env_1_args['prob_leave_bandit']
+    env_1_args['prob_organic_to_bandit'] = 0.1
     
     
     env = gym.make('reco-gym-v1')
     env.init_gym(env_1_args)
     
     data = env.generate_logs(U)
-    data.to_csv('data_%d_%d.csv'%(P, U), index=False)
+    data.to_csv('%s/data_%d_%d.csv'%(root, P, U), index=False)
     
     features, actions, deltas, pss, set_flags = gen_data(data, P)
-    with open('tr.nonmerge.uniform.svm', 'w') as tr, \
-            open('va.nonmerge.uniform.svm', 'w') as va, \
-            open('te.nonmerge.uniform.svm', 'w') as te:
+    with open('%s/tr.nonmerge.uniform.svm'%root, 'w') as tr, \
+            open('%s/va.nonmerge.uniform.svm'%root, 'w') as va, \
+            open('%s/te.nonmerge.uniform.svm'%root, 'w') as te:
                 dump_svm(tr, vstack(features[set_flags==0]), \
                         actions[set_flags==0], \
                         pss[set_flags==0], \
@@ -141,7 +144,7 @@ def main():
                         pss[set_flags==2], \
                         deltas[set_flags==2])
     
-    with open('label.svm', 'w') as label:
+    with open('%s/label.svm'%root, 'w') as label:
         for i in range(P):
             label.write('%d:1\n'%i)
 

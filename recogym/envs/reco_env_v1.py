@@ -60,12 +60,12 @@ class RecoEnv1(AbstractEnv):
         self.state_transition[0, 0] = 1 - sum(self.state_transition[0, :])
         self.state_transition[1, 1] = 1 - sum(self.state_transition[1, :])
 
-        # Initialise Gamma for all products (Organic).
+        # Initialise Gamma for all products (Organic). mean, var = 0, 1
         self.Gamma = self.rng.normal(
             size=(self.config.num_products, self.config.K)
         )
 
-        # Initialise mu_organic.
+        # Initialise mu_organic. mean, var = 0, sigma_mu_organic(3)
         self.mu_organic = self.rng.normal(
             0, self.config.sigma_mu_organic,
             size=(self.config.num_products, 1)
@@ -79,7 +79,7 @@ class RecoEnv1(AbstractEnv):
         super().reset(user_id)
         self.omega = self.rng.normal(
             0, self.config.sigma_omega_initial, size=(self.config.K, 1)
-        )
+        ) # mean, var = 0, sigma_omega_initial(1)
 
     # Update user state to one of (organic, bandit, leave) and their omega (latent factor).
     def update_state(self):
@@ -96,7 +96,7 @@ class RecoEnv1(AbstractEnv):
             self.omega = self.rng.normal(
                 self.omega,
                 self.config.sigma_omega * omega_k, size=(self.config.K, 1)
-            )
+            ) # mean, var = omega, sigma_omega(1)
         self.context_switch = old_state != self.state
 
     # Sample a click as response to recommendation when user in bandit state

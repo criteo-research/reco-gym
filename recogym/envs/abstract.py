@@ -179,9 +179,6 @@ class AbstractEnv(gym.Env, ABC):
 
         self.update_state()
 
-        if reward[0] == 1:
-            self.state = organic  # After a click, Organic Events always follow.
-
         # Markov state dependent logic.
         if self.state == organic:
             sessions = self.generate_organic_sessions()
