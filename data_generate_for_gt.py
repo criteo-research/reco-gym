@@ -46,7 +46,7 @@ def gen_data(data, num_products, va_ratio=0.2, te_ratio=0.2):
 
                 action = int(user_datum['a'])
                 delta = int(user_datum['c'])
-                ps = user_datum['ps']
+                ps = user_datum['ctr']
                 time = user_datum['t']
 
                 train_views = views
@@ -106,14 +106,16 @@ def dump_svm(f, X, y_idx, y_propensity, y_value):
     return
 
 def main():
+    print('Need to change rng of user embedding generation first')
     root = sys.argv[1]
     P = 100
-    U = 80000
+    U = 20000
     
     env_1_args['random_seed'] = 8964
+    env_1_args['random_seed_for_user'] = 2
     env_1_args['num_products'] = P
     env_1_args['K'] = 5
-    env_1_args['sigma_omega'] = 0.1  # default 0.1, the varaince of user embedding changes with time.
+    env_1_args['sigma_omega'] = 0  # default 0.1, the varaince of user embedding changes with time.
     env_1_args['number_of_flips'] = P//2
     env_1_args['prob_leave_bandit'] = float(sys.argv[2])
     env_1_args['prob_leave_organic'] = 0.0
@@ -124,28 +126,18 @@ def main():
     env = gym.make('reco-gym-v1')
     env.init_gym(env_1_args)
     
-    data = env.generate_logs(U)
+    data = env.generate_gt(U)
     data.to_csv('%s/data_%d_%d.csv'%(root, P, U), index=False)
     #data = pd.read_csv('%s/data_%d_%d.csv'%(root, P, U))
     
     features, actions, deltas, pss, set_flags = gen_data(data, P)
-    tr_num = int(U*0.6)
-    va_num = int(U*0.2)
-    with open('%s/tr.nonmerge.uniform.svm'%root, 'w') as tr, \
-            open('%s/va.nonmerge.uniform.svm'%root, 'w') as va, \
-            open('%s/te.nonmerge.uniform.svm'%root, 'w') as te:
-                dump_svm(tr, vstack(features[:tr_num]), \
-                        np.hstack(actions[:tr_num]), \
-                        np.hstack(pss[:tr_num]), \
-                        np.hstack(deltas[:tr_num]))
-                dump_svm(va, vstack(features[tr_num:(tr_num+va_num)]), \
-                        np.hstack(actions[tr_num:(tr_num+va_num)]), \
-                        np.hstack(pss[tr_num:(tr_num+va_num)]), \
-                        np.hstack(deltas[tr_num:(tr_num+va_num)]))
-                dump_svm(te, vstack(features[(tr_num+va_num):]), \
-                        np.hstack(actions[(tr_num+va_num):]), \
-                        np.hstack(pss[(tr_num+va_num):]), \
-                        np.hstack(deltas[(tr_num+va_num):]))
+    tr_num = int(U*0.)
+    va_num = int(U*0.)
+    with open('%s/te.nonmerge.uniform.svm'%root, 'w') as te:
+        dump_svm(te, vstack(features[(tr_num+va_num):]), \
+                np.hstack(actions[(tr_num+va_num):]), \
+                np.hstack(pss[(tr_num+va_num):]), \
+                np.hstack(deltas[(tr_num+va_num):]))
     
     with open('%s/label.svm'%root, 'w') as label:
         for i in range(P):

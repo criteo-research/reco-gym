@@ -11,6 +11,7 @@ import numpy as np
 from numba import njit
 
 from .abstract import AbstractEnv, env_args, organic
+from numpy.random.mtrand import RandomState
 
 # Default arguments for toy environment ------------------------------------
 
@@ -77,9 +78,15 @@ class RecoEnv1(AbstractEnv):
     # Create a new user.
     def reset(self, user_id=0):
         super().reset(user_id)
-        self.omega = self.rng.normal(
-            0, self.config.sigma_omega_initial, size=(self.config.K, 1)
-        ) # mean, var = 0, sigma_omega_initial(1)
+        if self.config.random_seed_for_user is not None:
+            self.omega = self.user_rng.normal(
+                0, self.config.sigma_omega_initial, size=(self.config.K, 1)
+            ) # mean, var = 0, sigma_omega_initial(1)
+        else:
+            self.omega = self.rng.normal(
+                0, self.config.sigma_omega_initial, size=(self.config.K, 1)
+            ) # mean, var = 0, sigma_omega_initial(1)
+
 
     # Update user state to one of (organic, bandit, leave) and their omega (latent factor).
     def update_state(self):

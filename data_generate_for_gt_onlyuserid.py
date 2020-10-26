@@ -6,12 +6,15 @@ import math
 from copy import deepcopy
 from tqdm import tqdm, trange
 from recogym import env_1_args, Configuration
+from collections import Counter
 from recogym.agents import RandomAgent, random_args
 import sys
 from multiprocessing import Pool
 
 def gen_data(data, num_products, va_ratio=0.2, te_ratio=0.2):
     data = pd.DataFrame().from_dict(data)
+    max_user_id = data['u'].max()
+    print('max user id:', max_user_id)
 
     global process_helper
     def process_helper(user_id):
@@ -21,8 +24,10 @@ def gen_data(data, num_products, va_ratio=0.2, te_ratio=0.2):
         tmp_delta = []
         tmp_set_flag = []
 
-        views = np.zeros((0, num_products))
-        history = np.zeros((0, 1))
+        #views = np.zeros((0, num_products))
+        #history = np.zeros((0, 1))
+        user_cntx = np.zeros((max_user_id + 1))
+        user_cntx[user_id] = 1
         for _, user_datum in data[data['u'] == user_id].iterrows():
             assert (not math.isnan(user_datum['t']))
             if user_datum['z'] == 'organic':
@@ -30,14 +35,14 @@ def gen_data(data, num_products, va_ratio=0.2, te_ratio=0.2):
                 assert (math.isnan(user_datum['c']))
                 assert (not math.isnan(user_datum['v']))
 
-                view = int(user_datum['v'])
+                #view = int(user_datum['v'])
 
-                tmp_view = np.zeros(num_products)
-                tmp_view[view] = 1
+                #tmp_view = np.zeros(num_products)
+                #tmp_view[view] = 1
 
-                # Append the latest view at the beginning of all views.
-                views = np.append(tmp_view[np.newaxis, :], views, axis = 0)
-                history = np.append(np.array([user_datum['t']])[np.newaxis, :], history, axis = 0)
+                ## Append the latest view at the beginning of all views.
+                #views = np.append(tmp_view[np.newaxis, :], views, axis = 0)
+                #history = np.append(np.array([user_datum['t']])[np.newaxis, :], history, axis = 0)
             else:
                 assert (user_datum['z'] == 'bandit')
                 assert (not math.isnan(user_datum['a']))
@@ -46,13 +51,13 @@ def gen_data(data, num_products, va_ratio=0.2, te_ratio=0.2):
 
                 action = int(user_datum['a'])
                 delta = int(user_datum['c'])
-                ps = user_datum['ps']
+                ps = user_datum['ctr']
                 time = user_datum['t']
 
-                train_views = views
-
-                feature = np.sum(train_views, axis = 0)
-                feature = feature/np.linalg.norm(feature)
+                #train_views = views
+                #feature = np.sum(train_views, axis = 0)
+                #feature = feature/np.linalg.norm(feature)
+                feature = user_cntx
 
                 tmp_feature.append(feature)
                 tmp_action.append(action)
@@ -78,7 +83,7 @@ def gen_data(data, num_products, va_ratio=0.2, te_ratio=0.2):
         output = p.map(process_helper, data['u'].unique())
         features, actions, deltas, pss, set_flags = zip(*output)
 
-    return features, actions, deltas, pss, set_flags
+    return vstack(features), np.hstack(actions), np.hstack(deltas), np.hstack(pss), np.hstack(set_flags)
 
 def dump_svm(f, X, y_idx, y_propensity, y_value):
     if not hasattr(f, "write"):
@@ -106,6 +111,7 @@ def dump_svm(f, X, y_idx, y_propensity, y_value):
     return
 
 def main():
+    print('Need to change rng of user embedding generation first')
     root = sys.argv[1]
     P = 100
     U = 80000
@@ -113,39 +119,29 @@ def main():
     env_1_args['random_seed'] = 8964
     env_1_args['num_products'] = P
     env_1_args['K'] = 5
-    env_1_args['sigma_omega'] = 0.1  # default 0.1, the varaince of user embedding changes with time.
+    env_1_args['sigma_omega'] = float(sys.argv[3]) #0.0  # default 0.1, the varaince of user embedding changes with time.
     env_1_args['number_of_flips'] = P//2
     env_1_args['prob_leave_bandit'] = float(sys.argv[2])
     env_1_args['prob_leave_organic'] = 0.0
     env_1_args['prob_bandit_to_organic'] = 1 - env_1_args['prob_leave_bandit']
-    env_1_args['prob_organic_to_bandit'] = 0.1
+    env_1_args['prob_organic_to_bandit'] = 1
     
     
     env = gym.make('reco-gym-v1')
     env.init_gym(env_1_args)
     
-    data = env.generate_logs(U)
+    data = env.generate_gt(U)
     data.to_csv('%s/data_%d_%d.csv'%(root, P, U), index=False)
     #data = pd.read_csv('%s/data_%d_%d.csv'%(root, P, U))
     
     features, actions, deltas, pss, set_flags = gen_data(data, P)
-    tr_num = int(U*0.6)
-    va_num = int(U*0.2)
-    with open('%s/tr.nonmerge.uniform.svm'%root, 'w') as tr, \
-            open('%s/va.nonmerge.uniform.svm'%root, 'w') as va, \
-            open('%s/te.nonmerge.uniform.svm'%root, 'w') as te:
-                dump_svm(tr, vstack(features[:tr_num]), \
-                        np.hstack(actions[:tr_num]), \
-                        np.hstack(pss[:tr_num]), \
-                        np.hstack(deltas[:tr_num]))
-                dump_svm(va, vstack(features[tr_num:(tr_num+va_num)]), \
-                        np.hstack(actions[tr_num:(tr_num+va_num)]), \
-                        np.hstack(pss[tr_num:(tr_num+va_num)]), \
-                        np.hstack(deltas[tr_num:(tr_num+va_num)]))
-                dump_svm(te, vstack(features[(tr_num+va_num):]), \
-                        np.hstack(actions[(tr_num+va_num):]), \
-                        np.hstack(pss[(tr_num+va_num):]), \
-                        np.hstack(deltas[(tr_num+va_num):]))
+    tr_num = int(U*0.)
+    va_num = int(U*0.)
+    with open('%s/te.nonmerge.uniform.svm'%root, 'w') as te:
+        dump_svm(te, vstack(features[(tr_num+va_num):]), \
+                np.hstack(actions[(tr_num+va_num):]), \
+                np.hstack(pss[(tr_num+va_num):]), \
+                np.hstack(deltas[(tr_num+va_num):]))
     
     with open('%s/label.svm'%root, 'w') as label:
         for i in range(P):

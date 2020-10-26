@@ -108,12 +108,12 @@ def dump_svm(f, X, y_idx, y_propensity, y_value):
 def main():
     root = sys.argv[1]
     P = 100
-    U = 200000
+    U = 80000
     
     env_1_args['random_seed'] = 8964
     env_1_args['num_products'] = P
     env_1_args['K'] = 5
-    env_1_args['sigma_omega'] = 0  # default 0.1, the varaince of user embedding changes with time.
+    env_1_args['sigma_omega'] = 0.1  # default 0.1, the varaince of user embedding changes with time.
     env_1_args['number_of_flips'] = P//2
     env_1_args['prob_leave_bandit'] = float(sys.argv[2])
     env_1_args['prob_leave_organic'] = 0.0
